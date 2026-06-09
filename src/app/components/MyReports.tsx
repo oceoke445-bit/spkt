@@ -145,7 +145,7 @@ export const MyReports: React.FC = () => {
 
       {/* Detail Modal */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
           {selectedReport && (
             <>
               <DialogHeader>
