@@ -174,14 +174,14 @@ export const OfficerDashboard: React.FC = () => {
 
       {/* Report Detail Dialog */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-4xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
           {selectedReport && (
             <>
               <DialogHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <DialogTitle className="text-2xl">{selectedReport.reportNumber}</DialogTitle>
-                    <p className="text-sm text-blue-200 mt-2">
+                <div className="pr-8">
+                  <DialogTitle className="text-2xl text-white">{selectedReport.reportNumber}</DialogTitle>
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                    <p className="text-sm text-blue-200">
                       Dibuat: {new Date(selectedReport.createdAt).toLocaleDateString('id-ID', {
                         weekday: 'long',
                         day: 'numeric',
@@ -191,10 +191,10 @@ export const OfficerDashboard: React.FC = () => {
                         minute: '2-digit'
                       })}
                     </p>
+                    <span className={`px-3 py-1 text-sm rounded-full border ${getStatusBadgeColor(selectedReport.status)}`}>
+                      {getStatusLabel(selectedReport.status)}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 text-sm rounded-full border ${getStatusBadgeColor(selectedReport.status)}`}>
-                    {getStatusLabel(selectedReport.status)}
-                  </span>
                 </div>
               </DialogHeader>
 
