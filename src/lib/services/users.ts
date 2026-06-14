@@ -1,4 +1,5 @@
 import { db, ensureDbReady } from '@/lib/db';
+import { ApiError } from '@/lib/api-response';
 import { hashPassword, verifyPassword, isPasswordHashed } from '@/lib/password';
 import type { DbUser } from '@/lib/types/spkt';
 
@@ -215,7 +216,6 @@ export interface UserPreferences {
   reportUpdate: boolean;
   letterReady: boolean;
   systemNews: boolean;
-  darkMode: boolean;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -225,7 +225,6 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   reportUpdate: true,
   letterReady: true,
   systemNews: false,
-  darkMode: true,
 };
 
 export function getUserPreferences(userId: string): UserPreferences {
@@ -235,7 +234,9 @@ export function getUserPreferences(userId: string): UserPreferences {
     | undefined;
   if (!row) return { ...DEFAULT_PREFERENCES };
   try {
-    return { ...DEFAULT_PREFERENCES, ...JSON.parse(row.preferences_json) };
+    const parsed = JSON.parse(row.preferences_json) as Partial<UserPreferences> & { darkMode?: boolean };
+    const { darkMode: _removed, ...rest } = parsed;
+    return { ...DEFAULT_PREFERENCES, ...rest };
   } catch {
     return { ...DEFAULT_PREFERENCES };
   }
@@ -345,4 +346,30 @@ export function updateOfficer(
 
   if (updates.length === 0) return;
   db.prepare(`UPDATE officers SET ${updates.join(', ')} WHERE id = @id`).run(params);
+}
+
+export function deleteOfficer(id: string): void {
+  ensureDbReady();
+  const row = db.prepare('SELECT id, name FROM officers WHERE id = ?').get(id) as
+    | { id: string; name: string }
+    | undefined;
+
+  if (!row) {
+    throw new ApiError(404, 'Petugas tidak ditemukan');
+  }
+
+  const activeReports = (
+    db
+      .prepare(
+        `SELECT COUNT(*) as c FROM reports
+         WHERE assigned_to = ? AND status NOT IN ('completed', 'rejected')`,
+      )
+      .get(row.name) as { c: number }
+  ).c;
+
+  if (activeReports > 0) {
+    throw new ApiError(409, 'Petugas masih memiliki laporan aktif');
+  }
+
+  db.prepare('DELETE FROM officers WHERE id = ?').run(id);
 }

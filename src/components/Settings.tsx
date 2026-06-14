@@ -18,8 +18,6 @@ import {
   Smartphone,
   Mail,
   Globe,
-  Moon,
-  Sun,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -40,7 +38,6 @@ const tabTriggerClass =
 
 export const Settings: React.FC = () => {
   const { user, refreshUser } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [notifications, setNotifications] = useState<UserPreferences>({
     email: true,
@@ -49,7 +46,6 @@ export const Settings: React.FC = () => {
     reportUpdate: true,
     letterReady: true,
     systemNews: false,
-    darkMode: true,
   });
 
   const [profileData, setProfileData] = useState({
@@ -77,8 +73,6 @@ export const Settings: React.FC = () => {
 
     spktApi.getPreferences().then(({ preferences }) => {
       setNotifications(preferences);
-      setIsDarkMode(preferences.darkMode);
-      document.documentElement.classList.toggle('spkt-light', !preferences.darkMode);
     }).catch(() => {});
   }, []);
 
@@ -156,10 +150,6 @@ export const Settings: React.FC = () => {
   const handleNotificationChange = async (key: keyof UserPreferences, value: boolean) => {
     const updated = { ...notifications, [key]: value };
     setNotifications(updated);
-    if (key === 'darkMode') {
-      setIsDarkMode(value);
-      document.documentElement.classList.toggle('spkt-light', !value);
-    }
     try {
       await spktApi.updatePreferences({ [key]: value });
       toast.success('Pengaturan disimpan');
@@ -526,24 +516,10 @@ export const Settings: React.FC = () => {
         <TabsContent value="preferences" className="space-y-6">
           <Card className={cardClass}>
             <CardHeader>
-              <CardTitle className="text-white">Tampilan</CardTitle>
-              <CardDescription className="text-blue-200">Sesuaikan tampilan aplikasi</CardDescription>
+              <CardTitle className="text-white">Bahasa</CardTitle>
+              <CardDescription className="text-blue-200">Preferensi bahasa aplikasi</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className={itemClass}>
-                <div className="flex items-center gap-3">
-                  {isDarkMode ? <Moon className="w-5 h-5 text-blue-200" /> : <Sun className="w-5 h-5 text-amber-300" />}
-                  <div>
-                    <h4 className="font-medium text-white">Mode Gelap</h4>
-                    <p className="text-sm text-blue-200">Aktifkan tema gelap</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={isDarkMode}
-                  onCheckedChange={(checked) => handleNotificationChange('darkMode', checked)}
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label className="text-blue-200">Bahasa</Label>
                 <Button

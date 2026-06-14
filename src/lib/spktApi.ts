@@ -125,7 +125,6 @@ export interface UserPreferences {
   reportUpdate: boolean;
   letterReady: boolean;
   systemNews: boolean;
-  darkMode: boolean;
 }
 
 export interface InfoArticle {
@@ -318,6 +317,11 @@ export const spktApi = {
     request<{ message: string }>(`/officers/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+
+  deleteOfficer: (id: string) =>
+    request<{ message: string }>(`/officers/${id}`, {
+      method: 'DELETE',
     }),
 
   uploadFiles: (files: File[]) => {

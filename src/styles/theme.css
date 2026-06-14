@@ -179,11 +179,3 @@
     line-height: 1.5;
   }
 }
-
-html.spkt-light {
-  --background: #f0f4f8;
-  --foreground: #0d1b2a;
-  --card: #ffffff;
-  --card-foreground: #0d1b2a;
-  --muted-foreground: #475569;
-}
