@@ -1,16 +1,29 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 
 import { cn } from "./utils";
 import { buttonVariants } from "./button";
 
+const calendarIcons = {
+  IconLeft: ({ className, ...props }: React.ComponentProps<typeof ChevronLeft>) => (
+    <ChevronLeft className={cn("size-4 shrink-0 text-current", className)} {...props} />
+  ),
+  IconRight: ({ className, ...props }: React.ComponentProps<typeof ChevronRight>) => (
+    <ChevronRight className={cn("size-4 shrink-0 text-current", className)} {...props} />
+  ),
+  IconDropdown: ({ className, ...props }: React.ComponentProps<typeof ChevronDown>) => (
+    <ChevronDown className={cn("size-3.5 shrink-0 text-current", className)} {...props} />
+  ),
+};
+
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  components,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
   return (
@@ -29,6 +42,11 @@ function Calendar({
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
+        nav_icon: "text-current",
+        caption_dropdowns: "flex items-center gap-1",
+        dropdown_month: "relative inline-flex items-center",
+        dropdown_year: "relative inline-flex items-center",
+        dropdown_icon: "text-current ml-1",
         table: "w-full border-collapse space-x-1",
         head_row: "flex",
         head_cell:
@@ -60,12 +78,8 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("size-4", className)} {...props} />
-        ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("size-4", className)} {...props} />
-        ),
+        ...calendarIcons,
+        ...components,
       }}
       {...props}
     />

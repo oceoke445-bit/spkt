@@ -21,6 +21,7 @@ export const PATCH = handleApi(async (request) => {
     name: body.name,
     phone: body.phone,
     address: body.address,
+    avatarUrl: body.avatarUrl,
   });
   return jsonOk({ user: { ...toPublicUser(updated), address: updated.address } });
 });

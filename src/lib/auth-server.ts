@@ -109,5 +109,6 @@ export function toPublicUser(user: DbUser) {
     role: user.role,
     nik: user.nik,
     phone: user.phone,
+    avatarUrl: user.avatarUrl,
   };
 }

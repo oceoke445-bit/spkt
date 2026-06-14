@@ -106,6 +106,7 @@ export interface DbUser {
   nik?: string;
   phone?: string;
   role: 'user' | 'petugas' | 'admin';
+  avatarUrl?: string;
 }
 
 export const getStatusBadgeColor = (status: ReportStatus | LetterStatus): string => {

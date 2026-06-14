@@ -235,6 +235,9 @@ function migrateSchema() {
   if (!columnExists('users', 'address')) {
     db.exec('ALTER TABLE users ADD COLUMN address TEXT');
   }
+  if (!columnExists('users', 'avatar_url')) {
+    db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT');
+  }
   if (!columnExists('letter_requests', 'rejection_reason')) {
     db.exec('ALTER TABLE letter_requests ADD COLUMN rejection_reason TEXT');
   }

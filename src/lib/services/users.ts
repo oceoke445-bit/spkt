@@ -10,6 +10,7 @@ function rowToDbUser(row: {
   phone: string | null;
   role: DbUser['role'];
   address?: string | null;
+  avatar_url?: string | null;
 }): DbUser & { address?: string } {
   return {
     id: row.id,
@@ -19,13 +20,14 @@ function rowToDbUser(row: {
     phone: row.phone ?? undefined,
     role: row.role,
     address: row.address ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
   };
 }
 
 export function getUserById(id: string): (DbUser & { address?: string; active?: boolean }) | null {
   ensureDbReady();
   const row = db
-    .prepare('SELECT id, email, name, nik, phone, role, address, active FROM users WHERE id = ?')
+    .prepare('SELECT id, email, name, nik, phone, role, address, active, avatar_url FROM users WHERE id = ?')
     .get(id) as
     | {
         id: string;
@@ -36,6 +38,7 @@ export function getUserById(id: string): (DbUser & { address?: string; active?: 
         role: DbUser['role'];
         address: string | null;
         active: number;
+        avatar_url: string | null;
       }
     | undefined;
   if (!row) return null;
@@ -118,6 +121,7 @@ export interface UpdateProfileInput {
   name?: string;
   phone?: string;
   address?: string;
+  avatarUrl?: string | null;
 }
 
 export function updateUserProfile(userId: string, input: UpdateProfileInput): DbUser & { address?: string } {
@@ -136,6 +140,10 @@ export function updateUserProfile(userId: string, input: UpdateProfileInput): Db
   if (input.address !== undefined) {
     updates.push('address = @address');
     params.address = input.address;
+  }
+  if (input.avatarUrl !== undefined) {
+    updates.push('avatar_url = @avatarUrl');
+    params.avatarUrl = input.avatarUrl ?? '';
   }
 
   if (updates.length === 0) {

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Avatar, AvatarFallback } from './ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Alert, AlertDescription } from './ui/alert';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
@@ -56,8 +56,11 @@ export const Settings: React.FC = () => {
     email: user?.email || '',
     phone: user?.phone || '',
     nik: user?.nik || '',
-    address: ''
+    address: '',
+    avatarUrl: user?.avatarUrl || '',
   });
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     spktApi.getProfile().then(({ user: profile }) => {
@@ -67,6 +70,7 @@ export const Settings: React.FC = () => {
         phone: profile.phone || '',
         nik: profile.nik || '',
         address: profile.address || '',
+        avatarUrl: profile.avatarUrl || '',
       });
     }).catch(() => {});
   }, []);
@@ -90,6 +94,37 @@ export const Settings: React.FC = () => {
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal memperbarui profil');
+    }
+  };
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Format tidak didukung', {
+        description: 'Gunakan file gambar JPG, PNG, atau WEBP',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const { files } = await spktApi.uploadFiles([file]);
+      const storedName = files[0]?.storedName;
+      if (!storedName) {
+        throw new Error('Upload gagal');
+      }
+      await spktApi.updateProfile({ avatarUrl: storedName });
+      setProfileData((prev) => ({ ...prev, avatarUrl: storedName }));
+      await refreshUser();
+      toast.success('Foto profil diperbarui');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengubah foto profil');
+    } finally {
+      setUploadingPhoto(false);
+      event.target.value = '';
     }
   };
 
@@ -162,7 +197,14 @@ export const Settings: React.FC = () => {
             <CardContent className="space-y-6">
               {/* Avatar */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                <Avatar className="w-24 h-24">
+                <Avatar className="w-24 h-24 border-2 border-blue-400/50">
+                  {profileData.avatarUrl && (
+                    <AvatarImage
+                      src={spktApi.getFileUrl(profileData.avatarUrl)}
+                      alt={profileData.name}
+                      className="object-cover"
+                    />
+                  )}
                   <AvatarFallback className="text-2xl bg-blue-600 text-white">
                     {getInitials(profileData.name)}
                   </AvatarFallback>
@@ -170,12 +212,21 @@ export const Settings: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-white">{profileData.name}</h3>
                   <p className="text-sm text-blue-200 capitalize">{user?.role}</p>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handlePhotoChange}
+                  />
                   <Button
                     type="button"
                     size="sm"
+                    disabled={uploadingPhoto}
                     className="mt-2 bg-sky-500 hover:bg-sky-600 text-white border border-sky-400/50 shadow-sm"
+                    onClick={() => photoInputRef.current?.click()}
                   >
-                    Ubah Foto
+                    {uploadingPhoto ? 'Mengupload...' : 'Ubah Foto'}
                   </Button>
                 </div>
               </div>

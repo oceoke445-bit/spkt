@@ -30,3 +30,127 @@ input[type="password"]::-webkit-password-reveal-button {
   -webkit-appearance: none;
   display: none;
 }
+
+/* Custom date picker — override react-day-picker default light hover/focus */
+.spkt-date-picker .rdp {
+  --rdp-accent-color: rgb(37, 99, 235);
+  --rdp-background-color: rgba(29, 78, 216, 0.55);
+  --rdp-selected-color: #fff;
+  margin: 0;
+}
+
+.spkt-date-picker .rdp-day {
+  color: rgb(191, 219, 254);
+}
+
+/* Semua state tombol kalender — jangan pakai background putih bawaan rdp */
+.spkt-date-picker .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgba(29, 78, 216, 0.55) !important;
+  color: white !important;
+}
+
+.spkt-date-picker .rdp-button:focus-visible:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgba(37, 99, 235, 0.7) !important;
+  color: white !important;
+  border-color: rgba(103, 232, 249, 0.7) !important;
+  outline: none;
+}
+
+.spkt-date-picker .rdp-day:hover:not(.rdp-day_selected):not([disabled]) {
+  background-color: rgba(29, 78, 216, 0.55) !important;
+  color: white !important;
+}
+
+.spkt-date-picker .rdp-day:focus-visible:not(.rdp-day_selected):not([disabled]) {
+  background-color: rgba(37, 99, 235, 0.7) !important;
+  color: white !important;
+  border-color: rgba(103, 232, 249, 0.7) !important;
+  outline: none;
+}
+
+.spkt-date-picker .rdp-day_selected,
+.spkt-date-picker .rdp-day_selected:hover,
+.spkt-date-picker .rdp-day_selected:focus-visible {
+  background: linear-gradient(to right, rgb(37, 99, 235), rgb(29, 78, 216)) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+.spkt-date-picker .rdp-day_today:not(.rdp-day_selected) {
+  background: rgba(30, 58, 138, 0.65) !important;
+  color: rgb(191, 219, 254) !important;
+  border: 1px solid rgba(103, 232, 249, 0.65) !important;
+}
+
+.spkt-date-picker .rdp-day_today:not(.rdp-day_selected):hover,
+.spkt-date-picker .rdp-day_today:not(.rdp-day_selected):focus-visible {
+  background: rgba(37, 99, 235, 0.75) !important;
+  color: white !important;
+}
+
+.spkt-date-picker .rdp-cell:has([aria-selected]) {
+  background: transparent !important;
+}
+
+.spkt-date-picker .rdp-nav_button {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  background: rgba(30, 58, 138, 0.9) !important;
+  color: rgb(103, 232, 249) !important;
+  opacity: 1;
+}
+
+.spkt-date-picker .rdp-nav_button:hover:not([disabled]) {
+  background: rgb(37, 99, 235) !important;
+  color: white !important;
+  border-color: rgba(103, 232, 249, 0.75) !important;
+}
+
+.spkt-date-picker .rdp-nav_button:focus-visible:not([disabled]) {
+  background: rgb(37, 99, 235) !important;
+  color: white !important;
+  border: 1px solid rgba(103, 232, 249, 0.75) !important;
+  outline: none;
+}
+
+.spkt-date-picker .rdp-nav_button svg {
+  width: 1rem;
+  height: 1rem;
+  color: currentColor !important;
+}
+
+.spkt-date-picker .rdp-caption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.spkt-date-picker .rdp-caption_label {
+  font-weight: 600;
+  color: white;
+  text-transform: capitalize;
+}
+
+.spkt-date-picker .rdp-nav {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.spkt-date-picker .rdp-nav_button {
+  pointer-events: auto;
+}
+
+.spkt-date-picker .rdp-caption_dropdowns,
+.spkt-date-picker .rdp-dropdown_month,
+.spkt-date-picker .rdp-dropdown_year {
+  display: none !important;
+}

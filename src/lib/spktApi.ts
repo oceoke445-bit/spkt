@@ -38,6 +38,7 @@ export interface LoginResponse {
     role: 'user' | 'petugas' | 'admin';
     nik?: string;
     phone?: string;
+    avatarUrl?: string;
   };
 }
 
@@ -104,6 +105,7 @@ export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
   address?: string;
+  avatarUrl?: string | null;
 }
 
 export interface NotificationItem {
@@ -152,10 +154,10 @@ export const spktApi = {
     }),
 
   getProfile: () =>
-    request<{ user: LoginResponse['user'] & { address?: string } }>('/users/me'),
+    request<{ user: LoginResponse['user'] & { address?: string; avatarUrl?: string } }>('/users/me'),
 
   updateProfile: (payload: UpdateProfilePayload) =>
-    request<{ user: LoginResponse['user'] & { address?: string } }>('/users/me', {
+    request<{ user: LoginResponse['user'] & { address?: string; avatarUrl?: string } }>('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),

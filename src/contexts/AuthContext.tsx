@@ -12,6 +12,27 @@ export interface User {
   role: UserRole;
   nik?: string;
   phone?: string;
+  avatarUrl?: string;
+}
+
+function mapSessionUser(sessionUser: {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  nik?: string;
+  phone?: string;
+  avatarUrl?: string;
+}): User {
+  return {
+    id: sessionUser.id,
+    name: sessionUser.name,
+    email: sessionUser.email,
+    role: sessionUser.role,
+    nik: sessionUser.nik,
+    phone: sessionUser.phone,
+    avatarUrl: sessionUser.avatarUrl,
+  };
 }
 
 interface AuthContextType {
@@ -59,14 +80,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       .then(({ user: sessionUser }) => {
         if (cancelled) return;
         if (sessionUser) {
-          setUser({
-            id: sessionUser.id,
-            name: sessionUser.name,
-            email: sessionUser.email,
-            role: sessionUser.role,
-            nik: sessionUser.nik,
-            phone: sessionUser.phone,
-          });
+          setUser(mapSessionUser(sessionUser));
         }
       })
       .catch(() => {
@@ -87,14 +101,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     const { user: dbUser } = await spktApi.login(email, password);
-    setUser({
-      id: dbUser.id,
-      name: dbUser.name,
-      email: dbUser.email,
-      role: dbUser.role,
-      nik: dbUser.nik,
-      phone: dbUser.phone,
-    });
+    setUser(mapSessionUser(dbUser));
   };
 
   const register = async (payload: {
@@ -105,26 +112,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     phone: string;
   }) => {
     const { user: dbUser } = await spktApi.register(payload);
-    setUser({
-      id: dbUser.id,
-      name: dbUser.name,
-      email: dbUser.email,
-      role: dbUser.role,
-      nik: dbUser.nik,
-      phone: dbUser.phone,
-    });
+    setUser(mapSessionUser(dbUser));
   };
 
   const refreshUser = async () => {
     const { user: profile } = await spktApi.getProfile();
-    setUser({
-      id: profile.id,
-      name: profile.name,
-      email: profile.email,
-      role: profile.role,
-      nik: profile.nik,
-      phone: profile.phone,
-    });
+    setUser(mapSessionUser(profile));
   };
 
   const logout = async () => {

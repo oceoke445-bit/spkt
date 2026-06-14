@@ -13,7 +13,8 @@ import { spktApi } from '@/lib/spktApi';
 import { useLetters } from '@/hooks/useLetters';
 import { SatisfactionForm } from './SatisfactionForm';
 import { FileUploadZone } from './FileUploadZone';
-import { Mail, Calendar, FileText, CheckCircle2, ArrowLeft, User, Save, ExternalLink } from 'lucide-react';
+import { DatePickerField } from '@/components/DatePickerField';
+import { Mail, FileText, CheckCircle2, ArrowLeft, User, Save, ExternalLink } from 'lucide-react';
 import { IconBadge, letterTypeIcons } from './iconStyles';
 import { toast } from 'sonner';
 import type { LetterRequest, LetterStatus } from '@/lib/types/spkt';
@@ -353,17 +354,13 @@ export const LetterService: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pickupDate" className="text-blue-200">Tanggal Pengambilan (Estimasi)</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
-                    <Input
-                      id="pickupDate"
-                      type="date"
-                      value={formData.pickupDate}
-                      onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
-                      className="pl-10 pr-3 bg-blue-900/50 border-blue-500/50 text-white [color-scheme:dark]"
-                      min={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                    />
-                  </div>
+                  <DatePickerField
+                    id="pickupDate"
+                    value={formData.pickupDate}
+                    onChange={(v) => setFormData({ ...formData, pickupDate: v })}
+                    placeholder="Pilih tanggal estimasi"
+                    min={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  />
                   <p className="text-xs text-blue-300">
                     Proses pengajuan memerlukan minimal 7 hari kerja
                   </p>
@@ -509,11 +506,11 @@ export const LetterService: React.FC = () => {
               {staffStatus === 'ready' && (
                 <div className="space-y-2">
                   <Label className="text-blue-200">Tanggal Pengambilan</Label>
-                  <Input
-                    type="date"
+                  <DatePickerField
                     value={staffPickupDate}
-                    onChange={(e) => setStaffPickupDate(e.target.value)}
-                    className="bg-blue-900/50 border-blue-500/50 text-white [color-scheme:dark]"
+                    onChange={setStaffPickupDate}
+                    placeholder="Pilih tanggal pengambilan"
+                    min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
               )}

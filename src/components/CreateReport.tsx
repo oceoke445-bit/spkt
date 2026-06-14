@@ -11,7 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { caseTypes } from '@/lib/data/mockData';
 import { spktApi } from '@/lib/spktApi';
 import { SatisfactionForm } from './SatisfactionForm';
-import { CheckCircle2, MapPin, Calendar, FileText } from 'lucide-react';
+import { CheckCircle2, MapPin, FileText } from 'lucide-react';
+import { DatePickerField } from '@/components/DatePickerField';
 import { toast } from 'sonner';
 
 interface CreateReportProps {
@@ -283,18 +284,14 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="incidentDate" className="text-blue-200">Tanggal Kejadian *</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
-                  <Input
-                    id="incidentDate"
-                    type="date"
-                    value={formData.incidentDate}
-                    onChange={(e) => handleInputChange('incidentDate', e.target.value)}
-                    className="pl-10 pr-3 bg-blue-900/50 border-blue-500/50 text-white [color-scheme:dark]"
-                    max={new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
+                <DatePickerField
+                  id="incidentDate"
+                  value={formData.incidentDate}
+                  onChange={(v) => handleInputChange('incidentDate', v)}
+                  placeholder="Pilih tanggal kejadian"
+                  max={new Date().toISOString().split('T')[0]}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location" className="text-blue-200">Lokasi Kejadian *</Label>
