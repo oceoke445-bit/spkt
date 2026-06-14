@@ -1,6 +1,7 @@
 import { listComplaints, createComplaint } from '@/lib/services/spkt';
 import { requireAuth } from '@/lib/auth-server';
-import { handleApi, jsonOk, ApiError } from '@/lib/api-response';
+import { handleApi, jsonOk } from '@/lib/api-response';
+import { parsePagination, buildPaginatedResult } from '@/lib/pagination';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,16 +9,22 @@ export const dynamic = 'force-dynamic';
 export const GET = handleApi(async (request) => {
   const sessionUser = await requireAuth(request);
   const { searchParams } = new URL(request.url);
+  const { page, limit } = parsePagination(searchParams);
 
   if (sessionUser.role === 'user') {
-    if (!sessionUser.nik) {
-      throw new ApiError(400, 'NIK user tidak tersedia');
-    }
-    return jsonOk({ complaints: listComplaints(sessionUser.nik) });
+    const { items, total } = listComplaints(sessionUser.nik, { page, limit });
+    return jsonOk({
+      complaints: items,
+      pagination: buildPaginatedResult(items, total, page, limit),
+    });
   }
 
   const nik = searchParams.get('nik') ?? undefined;
-  return jsonOk({ complaints: listComplaints(nik) });
+  const { items, total } = listComplaints(nik, { page, limit });
+  return jsonOk({
+    complaints: items,
+    pagination: buildPaginatedResult(items, total, page, limit),
+  });
 });
 
 export const POST = handleApi(async (request) => {

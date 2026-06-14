@@ -37,13 +37,14 @@ import { complaintCategories } from '@/lib/constants';
 import { spktApi } from '@/lib/spktApi';
 import { useComplaints } from '@/hooks/useComplaints';
 import { spktDialogClass } from '@/lib/spktDialog';
+import { SpktPagination } from './SpktPagination';
 
 export const Complaints: React.FC = () => {
   const { user } = useAuth();
   const isStaff = user?.role === 'petugas' || user?.role === 'admin';
   const nikFilter = isStaff ? undefined : user?.nik;
 
-  const { complaints: userComplaints, loading, refresh } = useComplaints(nikFilter);
+  const { complaints: userComplaints, loading, refresh, page, setPage, total, totalPages } = useComplaints(nikFilter);
   const [showForm, setShowForm] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -277,6 +278,7 @@ export const Complaints: React.FC = () => {
               ))}
             </div>
           )}
+          <SpktPagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
 
@@ -438,6 +440,32 @@ export const Complaints: React.FC = () => {
                           <span className="text-sm truncate">{file}</span>
                           <ExternalLink className="w-3 h-3 ml-auto shrink-0" />
                         </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedComplaint.timeline && selectedComplaint.timeline.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-white mb-3">Riwayat Status</h3>
+                    <div className="space-y-3">
+                      {selectedComplaint.timeline.map((event, index) => (
+                        <div key={`${event.timestamp}-${index}`} className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="w-3 h-3 rounded-full bg-sky-400 mt-1" />
+                            {index < selectedComplaint.timeline.length - 1 && (
+                              <div className="w-0.5 flex-1 bg-blue-600/50" />
+                            )}
+                          </div>
+                          <div className="pb-3">
+                            <p className="font-medium text-white">{event.status}</p>
+                            <p className="text-xs text-blue-300">
+                              {new Date(event.timestamp).toLocaleString('id-ID')}
+                              {event.officer ? ` · ${event.officer}` : ''}
+                            </p>
+                            {event.note && <p className="text-sm text-blue-200 mt-1">{event.note}</p>}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>

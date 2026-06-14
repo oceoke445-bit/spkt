@@ -38,7 +38,7 @@ function mapSessionUser(sessionUser: {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ requires2fa?: boolean; tempToken?: string }>;
   register: (payload: {
     email: string;
     password: string;
@@ -100,8 +100,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { user: dbUser } = await spktApi.login(email, password);
-    setUser(mapSessionUser(dbUser));
+    const result = await spktApi.login(email, password);
+    if ('requires2fa' in result && result.requires2fa) {
+      return { requires2fa: true, tempToken: result.tempToken };
+    }
+    if ('user' in result && result.user) {
+      setUser(mapSessionUser(result.user));
+    }
+    return {};
   };
 
   const register = async (payload: {

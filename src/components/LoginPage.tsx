@@ -5,17 +5,26 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Shield } from 'lucide-react';
 import { RegisterPage } from './RegisterPage';
+import { ForgotPasswordPage } from './ForgotPasswordPage';
+import { TrackService } from './TrackService';
 import { SpktLogo } from './SpktLogo';
+import { spktApi } from '@/lib/spktApi';
+
+type AuthView = 'login' | 'register' | 'forgot' | 'track' | '2fa';
 
 export const LoginPage: React.FC = () => {
-  const [showRegister, setShowRegister] = useState(false);
+  const [view, setView] = useState<AuthView>('login');
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tempToken, setTempToken] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+
+  const isProduction = process.env.NODE_ENV === 'production';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +32,27 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await login(email, password);
-    } catch (err) {
+      const result = await login(email, password);
+      if (result.requires2fa && result.tempToken) {
+        setTempToken(result.tempToken);
+        setView('2fa');
+      }
+    } catch {
       setError('Email atau password salah');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify2fa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await spktApi.verify2fa(tempToken, totpCode);
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kode tidak valid');
     } finally {
       setLoading(false);
     }
@@ -44,8 +71,50 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  if (showRegister) {
-    return <RegisterPage onBackToLogin={() => setShowRegister(false)} />;
+  if (view === 'register') {
+    return <RegisterPage onBackToLogin={() => setView('login')} />;
+  }
+  if (view === 'forgot') {
+    return <ForgotPasswordPage onBack={() => setView('login')} />;
+  }
+  if (view === 'track') {
+    return <TrackService onBack={() => setView('login')} />;
+  }
+
+  if (view === '2fa') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-2xl border-2 border-blue-500 bg-gradient-to-br from-blue-900 to-blue-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Shield className="w-5 h-5" /> Verifikasi 2FA
+              </CardTitle>
+              <CardDescription className="text-blue-200">Masukkan kode dari aplikasi authenticator</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleVerify2fa} className="space-y-4">
+                {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+                <Input
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  className="text-center text-2xl tracking-widest bg-blue-950/60 border-blue-400/60 text-white"
+                  required
+                />
+                <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
+                  {loading ? 'Memverifikasi...' : 'Verifikasi'}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setView('login')} className="w-full text-blue-300">
+                  Kembali
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -87,7 +156,12 @@ export const LoginPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-blue-100">Password</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="password" className="text-blue-100">Password</Label>
+                  <button type="button" onClick={() => setView('forgot')} className="text-xs text-blue-400 hover:text-blue-300 hover:underline">
+                    Lupa password?
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
                   <Input
@@ -111,51 +185,30 @@ export const LoginPage: React.FC = () => {
               </Button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-blue-500/40">
-              <p className="text-sm text-blue-300 mb-3 text-center">Login:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => quickLogin('user')}
-                  className="text-xs border-blue-400/60 text-blue-100 bg-blue-800/40 hover:bg-blue-700/60 hover:text-white hover:border-blue-300"
-                >
-                  User
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => quickLogin('petugas')}
-                  className="text-xs border-blue-400/60 text-blue-100 bg-blue-800/40 hover:bg-blue-700/60 hover:text-white hover:border-blue-300"
-                >
-                  Petugas
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => quickLogin('admin')}
-                  className="text-xs border-blue-400/60 text-blue-100 bg-blue-800/40 hover:bg-blue-700/60 hover:text-white hover:border-blue-300"
-                >
-                  Admin
-                </Button>
+            {!isProduction && (
+              <div className="mt-6 pt-6 border-t border-blue-500/40">
+                <p className="text-sm text-blue-300 mb-3 text-center">Login demo:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => quickLogin('user')} className="text-xs border-blue-400/60 text-blue-100 bg-blue-800/40">User</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => quickLogin('petugas')} className="text-xs border-blue-400/60 text-blue-100 bg-blue-800/40">Petugas</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => quickLogin('admin')} className="text-xs border-blue-400/60 text-blue-100 bg-blue-800/40">Admin</Button>
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-blue-300 mt-6">
-          Belum punya akun?{' '}
-          <button
-            type="button"
-            onClick={() => setShowRegister(true)}
-            className="text-blue-400 hover:text-blue-300 hover:underline"
-          >
-            Daftar sekarang
-          </button>
-        </p>
+        <div className="text-center text-sm text-blue-300 mt-6 space-y-2">
+          <p>
+            Belum punya akun?{' '}
+            <button type="button" onClick={() => setView('register')} className="text-blue-400 hover:text-blue-300 hover:underline">Daftar sekarang</button>
+          </p>
+          <p>
+            <button type="button" onClick={() => setView('track')} className="text-cyan-400 hover:text-cyan-300 hover:underline">
+              Lacak layanan tanpa login
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

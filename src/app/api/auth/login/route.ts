@@ -7,12 +7,20 @@ import {
   toPublicUser,
 } from '@/lib/auth-server';
 import { jsonError, jsonOk } from '@/lib/api-response';
+import { isTotpEnabledForUser, createPending2fa } from '@/lib/services/totp';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { logUserActivity } from '@/lib/services/activity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local';
+    if (!checkRateLimit(`login:${ip}`, 10, 60_000)) {
+      return jsonError(new Error('Terlalu banyak percobaan login. Coba lagi dalam 1 menit.'));
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -25,7 +33,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email atau password tidak valid' }, { status: 401 });
     }
 
+    if (user.role === 'admin' && process.env.REQUIRE_ADMIN_2FA === 'true' && !isTotpEnabledForUser(user.id)) {
+      return NextResponse.json(
+        { error: 'Admin wajib mengaktifkan 2FA sebelum login. Hubungi administrator sistem.' },
+        { status: 403 },
+      );
+    }
+
+    if (isTotpEnabledForUser(user.id)) {
+      const tempToken = createPending2fa(user.id);
+      return jsonOk({ requires2fa: true, tempToken });
+    }
+
     const token = createSession(user.id);
+    logUserActivity(user.id, 'login');
     const response = jsonOk({ user: toPublicUser(user) });
     response.cookies.set(getSessionCookieName(), token, {
       httpOnly: true,

@@ -41,10 +41,17 @@ Database dan seed data dibuat otomatis di `data/spkt.db` saat pertama kali API d
 | `npm run dev` | Development server |
 | `npm run build` | Production build |
 | `npm run start` | Jalankan production |
+| `npm run test` | Unit tests (Vitest) |
+| `npm run backup:db` | Backup SQLite & uploads ke `data/backups/` |
+
+### Environment (opsional)
+
+Salin `.env.example` ke `.env.local` jika perlu override.
 
 ## Dokumentasi
 
 - [Penjelasan flow & proses aplikasi](docs/penjelasan.md)
+- [Materi presentasi PPT (per slide)](docs/presentasi-ppt.md)
 - [Flow & diagram ringkas](docs/FLOW.md)
 - [API contract](docs/API.md)
 

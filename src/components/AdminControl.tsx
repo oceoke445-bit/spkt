@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import { getStatusBadgeColor, getStatusLabel, Report, ReportStatus } from '@/lib/data/mockData';
-import { spktApi } from '@/lib/spktApi';
+import { spktApi, type AuditLogItem } from '@/lib/spktApi';
 import { spktDialogClass } from '@/lib/spktDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReports } from '@/hooks/useReports';
@@ -17,6 +17,7 @@ import { useOfficers } from '@/hooks/useOfficers';
 import type { Officer } from '@/lib/types/spkt';
 import { Shield, UserX, RefreshCw, AlertTriangle, Search, Users, FileText, Ban } from 'lucide-react';
 import { toast } from 'sonner';
+import { SpktPagination } from './SpktPagination';
 
 const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
 const reportItemClass =
@@ -24,7 +25,7 @@ const reportItemClass =
 
 export const AdminControl: React.FC = () => {
   const { user } = useAuth();
-  const { reports: allReports, loading, refresh } = useReports();
+  const { reports: allReports, loading, refresh, page, setPage, total, totalPages } = useReports();
   const { officers: mockOfficers } = useOfficers();
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [overrideStatus, setOverrideStatus] = useState<ReportStatus>('verified');
@@ -33,6 +34,11 @@ export const AdminControl: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [showReassignDialog, setShowReassignDialog] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
+
+  useEffect(() => {
+    spktApi.getAuditLogs(1, 10).then(({ logs }) => setAuditLogs(logs)).catch(() => {});
+  }, []);
 
   const filteredReports = allReports.filter(report =>
     report.reportNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,20 +84,17 @@ export const AdminControl: React.FC = () => {
       return;
     }
 
-    const officer = mockOfficers.find(o => o.id === reassignOfficer);
-    if (!officer) return;
-
     try {
+      const officer = mockOfficers.find((o) => o.id === reassignOfficer);
       await spktApi.updateReport(selectedReport.id, {
         status: 'assigned',
-        assignedTo: officer.name,
-        assignedBy: user?.name,
-        timelineNote: `Reassigned to ${officer.name}`,
+        assignedOfficerId: reassignOfficer,
+        timelineNote: 'Ditugaskan ulang ke petugas',
         timelineOfficer: user?.name,
       });
       await refresh();
       toast.success('Berhasil reassign', {
-        description: `Laporan ditugaskan ulang ke ${officer.name}`,
+        description: `Laporan ditugaskan ulang ke ${officer?.name ?? 'petugas'}`,
       });
       setShowReassignDialog(false);
       setSelectedReport(null);
@@ -275,6 +278,7 @@ export const AdminControl: React.FC = () => {
               </div>
             ))}
           </div>
+          <SpktPagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
 
@@ -425,6 +429,23 @@ export const AdminControl: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Card className={cardClass}>
+        <CardHeader>
+          <CardTitle className="text-white">Audit Log</CardTitle>
+          <CardDescription className="text-blue-200">Riwayat aksi admin (override, reassign)</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+          {auditLogs.length === 0 && <p className="text-blue-300 text-sm">Belum ada log</p>}
+          {auditLogs.map((log) => (
+            <div key={log.id} className="text-xs p-2 rounded bg-blue-950/40 border border-blue-500/20">
+              <p className="text-white font-medium">{log.action} · {log.entityType} {log.entityId}</p>
+              <p className="text-blue-300">{log.actorName} — {log.details}</p>
+              <p className="text-blue-500">{new Date(log.createdAt).toLocaleString('id-ID')}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
       </>
       )}
     </div>

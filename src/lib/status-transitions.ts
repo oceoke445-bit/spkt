@@ -11,7 +11,7 @@ const REPORT_TRANSITIONS: Record<ReportStatus, ReportStatus[]> = {
 };
 
 const LETTER_TRANSITIONS: Record<LetterStatus, LetterStatus[]> = {
-  draft: ['submitted'],
+  draft: ['draft', 'submitted'],
   submitted: ['verified', 'rejected'],
   verified: ['ready', 'rejected'],
   ready: ['completed'],

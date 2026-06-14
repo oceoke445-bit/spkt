@@ -1,4 +1,4 @@
-import { getReportById, updateReport, updateUserReport } from '@/lib/services/spkt';
+import { getReportById, updateReport, updateUserReport, getOfficerById } from '@/lib/services/spkt';
 import { requireAuth, requireRole } from '@/lib/auth-server';
 import { handleApi, jsonOk, ApiError } from '@/lib/api-response';
 
@@ -44,11 +44,23 @@ export const PATCH = handleApi(async (request, context: { params: Promise<{ id: 
 
   requireRole(sessionUser, ['petugas', 'admin']);
 
+  let assignedTo = body.assignedTo;
+  if (body.assignedOfficerId) {
+    const officer = getOfficerById(body.assignedOfficerId);
+    if (officer) {
+      assignedTo = officer.name;
+    }
+  }
+
   const report = updateReport(id, {
     ...body,
+    assignedTo,
+    assignedOfficerId: body.assignedOfficerId,
     adminOverride: sessionUser.role === 'admin' && body.adminOverride,
     timelineOfficer: body.timelineOfficer ?? sessionUser.name,
     assignedBy: body.assignedBy ?? sessionUser.name,
+    auditActorId: sessionUser.role === 'admin' ? sessionUser.id : undefined,
+    auditActorName: sessionUser.role === 'admin' ? sessionUser.name : undefined,
   });
 
   return jsonOk({ report });

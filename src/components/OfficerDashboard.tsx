@@ -11,21 +11,27 @@ import { spktApi } from '@/lib/spktApi';
 import { spktDialogClass } from '@/lib/spktDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReports } from '@/hooks/useReports';
+import { useOfficers } from '@/hooks/useOfficers';
 import { Inbox, Clock, CheckCircle2, AlertCircle, FileText, User, MapPin, Calendar, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { SpktPagination } from './SpktPagination';
 
 export const OfficerDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { reports: incomingReports, loading, refresh } = useReports();
+  const { reports: incomingReports, loading, refresh, page, setPage, total, totalPages } = useReports();
+  const { officers } = useOfficers();
+  const myOfficer = officers.find((o) => o.userId === user?.id);
+  const officerId = myOfficer?.id;
+  const officerName = myOfficer?.name ?? user?.name ?? '';
+
+  const myReports = incomingReports.filter((r) => r.assignedOfficerId === officerId || (!r.assignedOfficerId && r.assignedTo === officerName));
+
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [actionNote, setActionNote] = useState('');
   const [newStatus, setNewStatus] = useState<ReportStatus>('completed');
 
-  const officerName = user?.name ?? '';
-  const myReports = incomingReports.filter((r) => r.assignedTo === officerName);
-
   const unassignedReports = incomingReports.filter(
-    (r) => (r.status === 'submitted' || r.status === 'verified') && !r.assignedTo,
+    (r) => (r.status === 'submitted' || r.status === 'verified') && !r.assignedOfficerId && !r.assignedTo,
   );
   const assignedToMe = myReports.filter((r) => r.status !== 'completed' && r.status !== 'rejected');
 
@@ -34,7 +40,7 @@ export const OfficerDashboard: React.FC = () => {
       r.status !== 'draft' &&
       r.status !== 'completed' &&
       r.status !== 'rejected' &&
-      (!r.assignedTo || r.assignedTo === officerName),
+      (!r.assignedOfficerId && !r.assignedTo) || r.assignedOfficerId === officerId || r.assignedTo === officerName,
   );
 
   const stats = [
@@ -112,7 +118,8 @@ export const OfficerDashboard: React.FC = () => {
     try {
       await spktApi.updateReport(selectedReport.id, {
         status: 'assigned',
-        assignedTo: user.name,
+        assignedTo: officerName,
+        assignedOfficerId: officerId,
         assignedBy: user.name,
         timelineNote: actionNote || undefined,
         timelineOfficer: user.name,
@@ -243,6 +250,7 @@ export const OfficerDashboard: React.FC = () => {
             ))
             )}
           </div>
+          <SpktPagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
 

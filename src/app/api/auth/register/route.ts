@@ -1,4 +1,5 @@
 import { registerUser } from '@/lib/services/users';
+import { validateNik } from '@/lib/services/account';
 import { createSession, getSessionCookieName, getSessionMaxAgeSec, toPublicUser } from '@/lib/auth-server';
 import { jsonError, jsonOk } from '@/lib/api-response';
 
@@ -16,6 +17,10 @@ export async function POST(request: Request) {
 
     if (password.length < 6) {
       return jsonError(new Error('Password minimal 6 karakter'));
+    }
+
+    if (!validateNik(nik)) {
+      return jsonError(new Error('NIK harus 16 digit angka'));
     }
 
     const user = registerUser({ email, password, name, nik, phone });

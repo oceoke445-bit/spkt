@@ -13,10 +13,13 @@ import {
 } from './ui/dialog';
 import { cn } from './ui/utils';
 import { spktDialogClass } from '@/lib/spktDialog';
+import { spktApi } from '@/lib/spktApi';
 
 interface FileUploadZoneProps {
   files: File[];
   onFilesChange: (files: File[]) => void;
+  existingStoredFiles?: string[];
+  onExistingFilesChange?: (files: string[]) => void;
   accept?: string;
   maxFiles?: number;
   maxSizeMb?: number;
@@ -36,6 +39,8 @@ function isPdfFile(file: File): boolean {
 export function FileUploadZone({
   files,
   onFilesChange,
+  existingStoredFiles = [],
+  onExistingFilesChange,
   accept = 'image/*,.pdf',
   maxFiles = 5,
   maxSizeMb = 10,
@@ -145,6 +150,22 @@ export function FileUploadZone({
         className="sr-only"
         aria-label="Pilih file"
       />
+      {existingStoredFiles.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-blue-300">File tersimpan sebelumnya:</p>
+          {existingStoredFiles.map((storedName) => (
+            <div key={storedName} className="flex items-center gap-3 p-2 bg-blue-800/50 rounded border border-blue-600/50">
+              <span className="text-sm text-blue-100 truncate flex-1">{storedName}</span>
+              <a href={spktApi.getFileUrl(storedName)} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-300 hover:underline shrink-0">Lihat</a>
+              {onExistingFilesChange && (
+                <Button type="button" size="sm" variant="ghost" className="text-red-300 h-7 px-2" onClick={() => onExistingFilesChange(existingStoredFiles.filter((f) => f !== storedName))}>
+                  Hapus
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       {files.length > 0 && (
         <div className="mt-3 space-y-2">
           {files.map((file, index) => (

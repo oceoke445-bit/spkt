@@ -39,7 +39,7 @@ function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) 
 const legendFormatter = (value: string) => <span style={{ color: '#93c5fd' }}>{value}</span>;
 
 export const AdminStatistics: React.FC = () => {
-  const { reports: allReports, loading: reportsLoading } = useReports();
+  const { reports: allReports, loading: reportsLoading } = useReports({ paginate: false });
   const [stats, setStats] = useState<Awaited<ReturnType<typeof spktApi.getAdminStats>>['stats'] | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 

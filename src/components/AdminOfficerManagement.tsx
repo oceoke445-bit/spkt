@@ -9,24 +9,45 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { spktApi } from '@/lib/spktApi';
 import { spktDialogClass } from '@/lib/spktDialog';
 import { toast } from 'sonner';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
+import type { Officer } from '@/lib/types/spkt';
+
+type PetugasUser = { id: string; name: string; email: string };
+
+const emptyForm = {
+  name: '',
+  rank: '',
+  email: '',
+  phone: '',
+  status: 'available',
+  userId: '',
+};
 
 export const AdminOfficerManagement: React.FC = () => {
-  const [officers, setOfficers] = useState<
-    Array<{ id: string; name: string; rank: string; email: string; phone: string; status: string }>
-  >([]);
+  const [officers, setOfficers] = useState<Officer[]>([]);
+  const [petugasUsers, setPetugasUsers] = useState<PetugasUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingOfficer, setEditingOfficer] = useState<Officer | null>(null);
   const [officerToDelete, setOfficerToDelete] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [form, setForm] = useState({ name: '', rank: '', email: '', phone: '', status: 'available' });
+  const [form, setForm] = useState(emptyForm);
 
   const refresh = () => {
     setLoading(true);
-    spktApi
-      .getOfficers()
-      .then(({ officers: data }) => setOfficers(data))
-      .catch(() => setOfficers([]))
+    Promise.all([spktApi.getOfficers(), spktApi.getUsers(1, 100)])
+      .then(([{ officers: data }, { users }]) => {
+        setOfficers(data);
+        setPetugasUsers(
+          users
+            .filter((u) => u.role === 'petugas' || u.role === 'admin')
+            .map((u) => ({ id: u.id, name: u.name, email: u.email })),
+        );
+      })
+      .catch(() => {
+        setOfficers([]);
+        setPetugasUsers([]);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -34,16 +55,53 @@ export const AdminOfficerManagement: React.FC = () => {
     refresh();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreate = () => {
+    setEditingOfficer(null);
+    setForm(emptyForm);
+    setShowForm(true);
+  };
+
+  const openEdit = (officer: Officer) => {
+    setEditingOfficer(officer);
+    setForm({
+      name: officer.name,
+      rank: officer.rank,
+      email: officer.email,
+      phone: officer.phone,
+      status: officer.status,
+      userId: officer.userId ?? '',
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      name: form.name,
+      rank: form.rank,
+      email: form.email,
+      phone: form.phone,
+      status: form.status,
+      userId: form.userId || undefined,
+    };
+
     try {
-      await spktApi.createOfficer(form);
-      toast.success('Petugas ditambahkan');
+      if (editingOfficer) {
+        await spktApi.updateOfficer(editingOfficer.id, {
+          ...payload,
+          userId: form.userId || null,
+        });
+        toast.success('Petugas diperbarui');
+      } else {
+        await spktApi.createOfficer(payload);
+        toast.success('Petugas ditambahkan');
+      }
       setShowForm(false);
-      setForm({ name: '', rank: '', email: '', phone: '', status: 'available' });
+      setForm(emptyForm);
+      setEditingOfficer(null);
       refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menambahkan petugas');
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan petugas');
     }
   };
 
@@ -75,14 +133,20 @@ export const AdminOfficerManagement: React.FC = () => {
     }
   };
 
+  const linkedUserLabel = (userId?: string) => {
+    if (!userId) return '—';
+    const user = petugasUsers.find((u) => u.id === userId);
+    return user ? `${user.name} (${user.email})` : userId;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Kelola Petugas</h1>
-          <p className="text-blue-200 mt-1">Daftar petugas SPKT dan ketersediaan</p>
+          <p className="text-blue-200 mt-1">Daftar petugas SPKT, ketersediaan, dan tautan akun login</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-blue-500 to-blue-600">
+        <Button onClick={openCreate} className="bg-gradient-to-r from-blue-500 to-blue-600">
           <Plus className="w-4 h-4 mr-2" />
           Tambah Petugas
         </Button>
@@ -91,14 +155,14 @@ export const AdminOfficerManagement: React.FC = () => {
       {loading && <div className="text-center py-8 text-blue-300">Memuat petugas...</div>}
 
       {!loading && (
-        <div className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border border-blue-500/50 rounded-lg overflow-hidden">
-          <table className="w-full min-w-[640px]">
+        <div className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border border-blue-500/50 rounded-lg overflow-x-auto">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-blue-950/50 border-b border-blue-500/30">
               <tr>
                 <th className="px-6 py-3 text-left text-xs text-blue-200 uppercase">Nama</th>
                 <th className="px-6 py-3 text-left text-xs text-blue-200 uppercase">Pangkat</th>
+                <th className="px-6 py-3 text-left text-xs text-blue-200 uppercase">Akun Login</th>
                 <th className="px-6 py-3 text-left text-xs text-blue-200 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs text-blue-200 uppercase">Telepon</th>
                 <th className="px-6 py-3 text-left text-xs text-blue-200 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs text-blue-200 uppercase">Aksi</th>
               </tr>
@@ -108,8 +172,8 @@ export const AdminOfficerManagement: React.FC = () => {
                 <tr key={o.id} className="hover:bg-blue-800/50">
                   <td className="px-6 py-4 text-white font-medium">{o.name}</td>
                   <td className="px-6 py-4 text-blue-200">{o.rank}</td>
+                  <td className="px-6 py-4 text-blue-200 text-sm">{linkedUserLabel(o.userId)}</td>
                   <td className="px-6 py-4 text-blue-200">{o.email}</td>
-                  <td className="px-6 py-4 text-blue-200">{o.phone}</td>
                   <td className="px-6 py-4">
                     <Select value={o.status} onValueChange={(v) => updateStatus(o.id, v)}>
                       <SelectTrigger className="w-36 bg-blue-900/50 border-blue-500/50 text-white">
@@ -123,15 +187,26 @@ export const AdminOfficerManagement: React.FC = () => {
                     </Select>
                   </td>
                   <td className="px-6 py-4">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 shadow-md"
-                      onClick={() => setOfficerToDelete({ id: o.id, name: o.name })}
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" />
-                      Hapus
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-500/50 text-blue-200 hover:bg-blue-800/60"
+                        onClick={() => openEdit(o)}
+                      >
+                        <Pencil className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 shadow-md"
+                        onClick={() => setOfficerToDelete({ id: o.id, name: o.name })}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Hapus
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -143,9 +218,14 @@ export const AdminOfficerManagement: React.FC = () => {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className={spktDialogClass('lg')}>
           <DialogHeader>
-            <DialogTitle className="text-white">Tambah Petugas Baru</DialogTitle>
+            <DialogTitle className="text-white">
+              {editingOfficer ? 'Edit Petugas' : 'Tambah Petugas Baru'}
+            </DialogTitle>
+            <DialogDescription className="text-blue-200">
+              Hubungkan petugas ke akun login agar penugasan laporan berfungsi dengan benar.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-blue-200">Nama</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="bg-blue-900/50 border-blue-500/50 text-white" />
@@ -155,15 +235,31 @@ export const AdminOfficerManagement: React.FC = () => {
               <Input value={form.rank} onChange={(e) => setForm({ ...form, rank: e.target.value })} required className="bg-blue-900/50 border-blue-500/50 text-white" />
             </div>
             <div className="space-y-2">
-              <Label className="text-blue-200">Email</Label>
+              <Label className="text-blue-200">Email Petugas</Label>
               <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="bg-blue-900/50 border-blue-500/50 text-white" />
             </div>
             <div className="space-y-2">
               <Label className="text-blue-200">Telepon</Label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className="bg-blue-900/50 border-blue-500/50 text-white" />
             </div>
+            <div className="space-y-2">
+              <Label className="text-blue-200">Tautkan ke Akun Login</Label>
+              <Select value={form.userId || 'none'} onValueChange={(v) => setForm({ ...form, userId: v === 'none' ? '' : v })}>
+                <SelectTrigger className="bg-blue-900/50 border-blue-500/50 text-white">
+                  <SelectValue placeholder="Pilih akun petugas..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Tidak ditautkan</SelectItem>
+                  {petugasUsers.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name} — {u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
-              Simpan
+              {editingOfficer ? 'Simpan Perubahan' : 'Simpan'}
             </Button>
           </form>
         </DialogContent>

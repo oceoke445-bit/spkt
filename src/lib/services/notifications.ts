@@ -1,4 +1,5 @@
 import { db, ensureDbReady } from '@/lib/db';
+import { getUserPreferences } from '@/lib/services/users';
 
 export interface Notification {
   id: string;
@@ -15,14 +16,34 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function shouldDeliverInApp(userId: string, type: string): boolean {
+  const prefs = getUserPreferences(userId);
+  if (!prefs.push) return false;
+
+  if (type === 'report_status' || type === 'complaint_update') {
+    return prefs.reportUpdate;
+  }
+  if (type.startsWith('letter_')) {
+    return prefs.letterReady;
+  }
+  if (type === 'system_news' || type === 'system') {
+    return prefs.systemNews;
+  }
+  return true;
+}
+
 export function createNotification(input: {
   userId: string;
   type: string;
   title: string;
   message: string;
   link?: string;
-}): Notification {
+}): Notification | null {
   ensureDbReady();
+  if (!shouldDeliverInApp(input.userId, input.type)) {
+    return null;
+  }
+
   const id = `N${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
   const createdAt = nowIso();
 

@@ -1,4 +1,4 @@
-import { getLetterById, updateLetter } from '@/lib/services/spkt';
+import { getLetterById, updateLetter, updateUserLetter } from '@/lib/services/spkt';
 import { requireAuth, requireRole } from '@/lib/auth-server';
 import { handleApi, jsonOk, ApiError } from '@/lib/api-response';
 
@@ -23,15 +23,33 @@ export const GET = handleApi(async (request, context: { params: Promise<{ id: st
 
 export const PATCH = handleApi(async (request, context: { params: Promise<{ id: string }> }) => {
   const sessionUser = await requireAuth(request);
-  requireRole(sessionUser, ['petugas', 'admin']);
-
   const { id } = await context.params;
   const body = await request.json();
+
+  if (sessionUser.role === 'user') {
+    if (!sessionUser.nik) {
+      throw new ApiError(400, 'NIK tidak tersedia');
+    }
+    const letter = updateUserLetter(id, sessionUser.nik, {
+      purpose: body.purpose,
+      pickupDate: body.pickupDate,
+      requesterPhone: body.requesterPhone,
+      attachmentFiles: body.attachmentFiles,
+      submit: body.submit,
+      letterTypeId: body.letterTypeId,
+      letterTypeName: body.letterTypeName,
+    });
+    return jsonOk({ letter });
+  }
+
+  requireRole(sessionUser, ['petugas', 'admin']);
 
   const letter = updateLetter(id, {
     status: body.status,
     pickupDate: body.pickupDate,
     rejectionReason: body.rejectionReason,
+    timelineNote: body.timelineNote,
+    timelineOfficer: sessionUser.name,
   });
 
   if (!letter) {

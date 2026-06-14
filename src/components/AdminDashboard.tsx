@@ -28,7 +28,7 @@ const legendFormatter = (value: string) => (
 );
 
 export const AdminDashboard: React.FC = () => {
-  const { reports: mockReports, loading: reportsLoading } = useReports();
+  const { reports: mockReports, loading: reportsLoading } = useReports({ paginate: false });
   const [stats, setStats] = useState<Awaited<ReturnType<typeof spktApi.getAdminStats>>['stats'] | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 

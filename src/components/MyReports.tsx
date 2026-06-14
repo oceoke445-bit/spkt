@@ -12,6 +12,7 @@ import { spktApi } from '@/lib/spktApi';
 import { spktDialogClass } from '@/lib/spktDialog';
 import { CsiPromptButton } from './CsiPromptButton';
 import { useCsiEligibility } from '@/hooks/useCsiEligibility';
+import { SpktPagination } from './SpktPagination';
 
 interface MyReportsProps {
   onContinueDraft?: (reportId: string) => void;
@@ -19,7 +20,7 @@ interface MyReportsProps {
 
 export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
   const { user } = useAuth();
-  const { reports: userReports, loading } = useReports({ nik: user?.nik });
+  const { reports: userReports, loading, page, setPage, total, totalPages } = useReports({ nik: user?.nik });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -181,6 +182,7 @@ export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
               ))}
             </div>
           )}
+          <SpktPagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
 

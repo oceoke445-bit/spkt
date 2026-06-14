@@ -288,8 +288,54 @@ function migrateSchema() {
   if (!columnExists('users', 'preferences_json')) {
     db.exec("ALTER TABLE users ADD COLUMN preferences_json TEXT NOT NULL DEFAULT '{}'");
   }
+  if (!columnExists('users', 'totp_secret')) {
+    db.exec('ALTER TABLE users ADD COLUMN totp_secret TEXT');
+  }
+  if (!columnExists('users', 'totp_enabled')) {
+    db.exec('ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0');
+  }
+  if (!columnExists('reports', 'assigned_officer_id')) {
+    db.exec('ALTER TABLE reports ADD COLUMN assigned_officer_id TEXT');
+  }
+  if (!columnExists('letter_requests', 'updated_at')) {
+    db.exec('ALTER TABLE letter_requests ADD COLUMN updated_at TEXT');
+    db.prepare('UPDATE letter_requests SET updated_at = created_at WHERE updated_at IS NULL').run();
+  }
+  if (!columnExists('letter_requests', 'requester_phone')) {
+    db.exec('ALTER TABLE letter_requests ADD COLUMN requester_phone TEXT');
+  }
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS letter_timeline (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      letter_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      note TEXT,
+      officer TEXT,
+      FOREIGN KEY (letter_id) REFERENCES letter_requests(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id TEXT PRIMARY KEY,
+      actor_id TEXT NOT NULL,
+      actor_name TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      details TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
+
+    CREATE TABLE IF NOT EXISTS pending_2fa (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS info_articles (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -298,11 +344,96 @@ function migrateSchema() {
       content TEXT NOT NULL,
       published_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS complaint_timeline (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      complaint_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      note TEXT,
+      officer TEXT,
+      FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS user_activities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      details TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_user_activities_user ON user_activities(user_id, created_at);
   `);
 
   seedInfoArticles();
   syncInfoArticles();
   migratePlainPasswords();
+  linkOfficersToUsers();
+  backfillLetterTimelines();
+  backfillComplaintTimelines();
+}
+
+function backfillComplaintTimelines() {
+  const complaints = db
+    .prepare('SELECT id, status, created_at FROM complaints')
+    .all() as Array<{ id: string; status: string; created_at: string }>;
+
+  const countStmt = db.prepare('SELECT COUNT(*) as c FROM complaint_timeline WHERE complaint_id = ?');
+  const insertStmt = db.prepare(
+    'INSERT INTO complaint_timeline (complaint_id, status, timestamp) VALUES (?, ?, ?)',
+  );
+
+  for (const complaint of complaints) {
+    const count = (countStmt.get(complaint.id) as { c: number }).c;
+    if (count === 0) {
+      insertStmt.run(complaint.id, 'Pengaduan dibuat', complaint.created_at);
+    }
+  }
+}
+
+function backfillLetterTimelines() {
+  const letters = db
+    .prepare('SELECT id, status, created_at FROM letter_requests')
+    .all() as Array<{ id: string; status: string; created_at: string }>;
+
+  const countStmt = db.prepare('SELECT COUNT(*) as c FROM letter_timeline WHERE letter_id = ?');
+  const insertStmt = db.prepare(
+    'INSERT INTO letter_timeline (letter_id, status, timestamp) VALUES (?, ?, ?)',
+  );
+
+  for (const letter of letters) {
+    const count = (countStmt.get(letter.id) as { c: number }).c;
+    if (count === 0) {
+      insertStmt.run(letter.id, 'Pengajuan dibuat', letter.created_at);
+    }
+  }
+}
+
+function linkOfficersToUsers() {
+  const petugasUsers = db
+    .prepare("SELECT id, email, name FROM users WHERE role = 'petugas'")
+    .all() as Array<{ id: string; email: string; name: string }>;
+
+  for (const user of petugasUsers) {
+    const officer = db
+      .prepare('SELECT id FROM officers WHERE email = ? OR user_id = ?')
+      .get(user.email, user.id) as { id: string } | undefined;
+    if (officer) {
+      db.prepare('UPDATE officers SET user_id = ?, name = ? WHERE id = ?').run(user.id, user.name, officer.id);
+    } else {
+      db.prepare(
+        `INSERT INTO officers (id, user_id, name, rank, email, phone, status)
+         VALUES (@id, @userId, @name, 'Brigadir', @email, '', 'available')`,
+      ).run({
+        id: `OFF${user.id}`,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+      });
+    }
+  }
 }
 
 const INFO_ARTICLE_SEED = [

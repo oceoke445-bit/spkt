@@ -1359,3 +1359,31 @@ flowchart TB
 ---
 
 *Dokumen ini menjelaskan flow dan proses aplikasi SPKT Digital sesuai implementasi kode terkini. Untuk perubahan fitur, bandingkan dengan file referensi di Bagian 20.*
+
+---
+
+## Pembaruan Fitur (2025)
+
+### Keamanan & Akun
+- Lupa password dengan rate limit (5x/menit per IP)
+- 2FA TOTP opsional; admin bisa diwajibkan via `REQUIRE_ADMIN_2FA=true`
+- Export data & hapus akun (anonimisasi laporan/surat/pengaduan by NIK)
+- Preferensi notifikasi dihormati untuk notifikasi in-app
+- Privasi: profil publik & riwayat aktivitas (disimpan di preferensi user)
+
+### Petugas & Admin
+- Antrian laporan petugas: belum ditugaskan + ditugaskan ke petugas (`officerInbox`)
+- Kelola Petugas: tautkan `userId` ke akun login
+- Audit log diperluas (user, artikel, petugas, hapus akun, pengaduan)
+- Pagination API & UI (default 20 item/halaman)
+
+### Layanan
+- Lacak nomor tanpa login
+- Surat: draft, timeline, unduh PDF
+- Pengaduan: timeline status
+- CMS artikel informasi
+
+### Operasional
+- `npm run backup:db` — backup database & uploads
+- GitLab CI: test + build
+- `.env.example`

@@ -42,6 +42,7 @@ const menuItems: MenuItem[] = [
   { icon: BarChart3, iconColor: iconAccent.amber.color, label: 'Statistik', view: 'statistics', roles: ['admin'] },
   { icon: Star, iconColor: iconAccent.amber.color, label: 'Kepuasan (CSI)', view: 'csi-dashboard', roles: ['admin'] },
   { icon: Info, iconColor: iconAccent.cyan.color, label: 'Informasi', view: 'information', roles: ['user', 'petugas', 'admin'] },
+  { icon: FileText, iconColor: iconAccent.emerald.color, label: 'Kelola Artikel', view: 'article-management', roles: ['admin'] },
   { icon: Settings, iconColor: iconAccent.blue.color, label: 'Pengaturan', view: 'settings', roles: ['user', 'petugas', 'admin'] },
 ];
 

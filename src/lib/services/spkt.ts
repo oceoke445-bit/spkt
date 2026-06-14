@@ -6,6 +6,8 @@ import {
 } from '@/lib/reference';
 import { canTransitionReport, canTransitionLetter, canTransitionComplaint } from '@/lib/status-transitions';
 import { createNotification, notifyUserByNik } from '@/lib/services/notifications';
+import { createAuditLog } from '@/lib/services/audit';
+import { logUserActivity } from '@/lib/services/activity';
 import type {
   Report,
   ReportStatus,
@@ -41,6 +43,7 @@ function rowToReport(
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
     assignedTo: row.assigned_to as string | undefined,
+    assignedOfficerId: row.assigned_officer_id as string | undefined,
     assignedBy: row.assigned_by as string | undefined,
     assignedAt: row.assigned_at as string | undefined,
     notes: row.notes as string | undefined,
@@ -80,26 +83,69 @@ function hydrateReport(row: Record<string, unknown>): Report {
 export interface ListReportsFilter {
   nik?: string;
   assignedTo?: string;
+  assignedOfficerId?: string;
+  /** Petugas: antrian masuk (belum ditugaskan) + laporan yang ditugaskan ke petugas ini */
+  officerInbox?: {
+    officerId?: string;
+    officerName: string;
+  };
 }
 
-export function listReports(filter: ListReportsFilter = {}): Report[] {
+export interface ListPagination {
+  page: number;
+  limit: number;
+}
+
+export function listReports(
+  filter: ListReportsFilter = {},
+  pagination?: ListPagination,
+): { items: Report[]; total: number } {
   ensureDbReady();
   let sql = 'SELECT * FROM reports WHERE 1=1';
+  let countSql = 'SELECT COUNT(*) as c FROM reports WHERE 1=1';
   const params: Record<string, string> = {};
 
   if (filter.nik) {
     sql += ' AND reporter_nik = @nik';
+    countSql += ' AND reporter_nik = @nik';
     params.nik = filter.nik;
   }
   if (filter.assignedTo) {
     sql += ' AND assigned_to = @assignedTo';
+    countSql += ' AND assigned_to = @assignedTo';
     params.assignedTo = filter.assignedTo;
+  }
+  if (filter.assignedOfficerId) {
+    sql += ' AND assigned_officer_id = @assignedOfficerId';
+    countSql += ' AND assigned_officer_id = @assignedOfficerId';
+    params.assignedOfficerId = filter.assignedOfficerId;
+  }
+  if (filter.officerInbox) {
+    const inboxClause = ` AND status != 'draft' AND (
+      (COALESCE(assigned_officer_id, '') = '' AND COALESCE(assigned_to, '') = '')
+      OR assigned_to = @officerInboxName
+      ${filter.officerInbox.officerId ? "OR assigned_officer_id = @officerInboxId" : ''}
+    )`;
+    sql += inboxClause;
+    countSql += inboxClause;
+    params.officerInboxName = filter.officerInbox.officerName;
+    if (filter.officerInbox.officerId) {
+      params.officerInboxId = filter.officerInbox.officerId;
+    }
   }
 
   sql += ' ORDER BY created_at DESC';
 
+  const total = (db.prepare(countSql).get(params) as { c: number }).c;
+
+  if (pagination) {
+    sql += ' LIMIT @limit OFFSET @offset';
+    params.limit = String(pagination.limit);
+    params.offset = String((pagination.page - 1) * pagination.limit);
+  }
+
   const rows = db.prepare(sql).all(params) as Record<string, unknown>[];
-  return rows.map(hydrateReport);
+  return { items: rows.map(hydrateReport), total };
 }
 
 export function getReportById(id: string): Report | null {
@@ -169,6 +215,10 @@ export function createReport(input: CreateReportInput): Report {
     }
   }
 
+  if (input.reporterUserId) {
+    logUserActivity(input.reporterUserId, 'create_report', reportNumber);
+  }
+
   return getReportById(id)!;
 }
 
@@ -187,11 +237,14 @@ export function addTimelineEvent(
 export interface UpdateReportInput {
   status?: ReportStatus;
   assignedTo?: string;
+  assignedOfficerId?: string;
   assignedBy?: string;
   notes?: string;
   timelineNote?: string;
   timelineOfficer?: string;
   adminOverride?: boolean;
+  auditActorId?: string;
+  auditActorName?: string;
 }
 
 export interface UpdateUserReportInput {
@@ -241,6 +294,14 @@ export function updateReport(id: string, input: UpdateReportInput): Report {
     updates.push('assigned_at = @assignedAt');
     params.assignedAt = ts;
   }
+  if (input.assignedOfficerId !== undefined) {
+    updates.push('assigned_officer_id = @assignedOfficerId');
+    params.assignedOfficerId = input.assignedOfficerId;
+    if (input.assignedOfficerId) {
+      updates.push('assigned_at = @assignedAt');
+      params.assignedAt = ts;
+    }
+  }
   if (input.assignedBy !== undefined) {
     updates.push('assigned_by = @assignedBy');
     params.assignedBy = input.assignedBy;
@@ -270,6 +331,28 @@ export function updateReport(id: string, input: UpdateReportInput): Report {
       title: 'Status Laporan Diperbarui',
       message: `Laporan ${existing.reportNumber} sekarang: ${STATUS_TIMELINE_LABEL[input.status] ?? input.status}`,
       link: 'my-reports',
+    });
+  }
+
+  if (input.adminOverride && input.auditActorId && input.auditActorName) {
+    createAuditLog({
+      actorId: input.auditActorId,
+      actorName: input.auditActorName,
+      action: 'override_status',
+      entityType: 'report',
+      entityId: id,
+      details: `Status ${existing.status} → ${input.status ?? existing.status}. ${input.timelineNote ?? ''}`,
+    });
+  }
+
+  if (input.assignedOfficerId && input.auditActorId && input.auditActorName) {
+    createAuditLog({
+      actorId: input.auditActorId,
+      actorName: input.auditActorName,
+      action: 'reassign_officer',
+      entityType: 'report',
+      entityId: id,
+      details: `Ditugaskan ke officer ${input.assignedOfficerId}`,
     });
   }
 
@@ -336,20 +419,72 @@ export function updateUserReport(id: string, reporterNik: string, input: UpdateU
   return getReportById(id)!;
 }
 
-export function listLetters(nik?: string): LetterRequest[] {
+export function listLetters(
+  nik?: string,
+  pagination?: ListPagination,
+): { items: LetterRequest[]; total: number } {
   ensureDbReady();
   let sql = 'SELECT * FROM letter_requests';
+  let countSql = 'SELECT COUNT(*) as c FROM letter_requests';
   const params: Record<string, string> = {};
+  const where: string[] = [];
 
   if (nik) {
-    sql += ' WHERE requester_nik = @nik';
+    where.push('requester_nik = @nik');
     params.nik = nik;
+  }
+  if (where.length) {
+    const clause = ` WHERE ${where.join(' AND ')}`;
+    sql += clause;
+    countSql += clause;
   }
   sql += ' ORDER BY created_at DESC';
 
+  const total = (db.prepare(countSql).get(params) as { c: number }).c;
+
+  if (pagination) {
+    sql += ' LIMIT @limit OFFSET @offset';
+    params.limit = String(pagination.limit);
+    params.offset = String((pagination.page - 1) * pagination.limit);
+  }
+
   const rows = db.prepare(sql).all(params) as Array<Record<string, unknown>>;
-  return rows.map(hydrateLetter);
+  return { items: rows.map(hydrateLetter), total };
 }
+
+function loadLetterTimeline(letterId: string): TimelineEvent[] {
+  const rows = db
+    .prepare(
+      'SELECT status, timestamp, note, officer FROM letter_timeline WHERE letter_id = ? ORDER BY timestamp ASC',
+    )
+    .all(letterId) as Array<{ status: string; timestamp: string; note: string | null; officer: string | null }>;
+  return rows.map((t) => ({
+    status: t.status,
+    timestamp: t.timestamp,
+    note: t.note ?? undefined,
+    officer: t.officer ?? undefined,
+  }));
+}
+
+function addLetterTimelineEvent(
+  letterId: string,
+  status: string,
+  timestamp?: string,
+  note?: string,
+  officer?: string,
+): void {
+  db.prepare(
+    'INSERT INTO letter_timeline (letter_id, status, timestamp, note, officer) VALUES (?, ?, ?, ?, ?)',
+  ).run(letterId, status, timestamp ?? nowIso(), note ?? null, officer ?? null);
+}
+
+const LETTER_STATUS_TIMELINE_LABEL: Partial<Record<LetterStatus, string>> = {
+  submitted: 'Pengajuan dikirim',
+  verified: 'Diverifikasi',
+  ready: 'Siap diambil',
+  completed: 'Selesai',
+  rejected: 'Ditolak',
+};
 
 function loadLetterAttachments(letterId: string): string[] {
   const rows = db
@@ -365,13 +500,16 @@ function hydrateLetter(row: Record<string, unknown>): LetterRequest {
     requestNumber: row.request_number as string,
     requesterName: row.requester_name as string,
     requesterNIK: row.requester_nik as string,
+    requesterPhone: row.requester_phone as string | undefined,
     letterType: row.letter_type as string,
     purpose: row.purpose as string,
     status: row.status as LetterStatus,
     createdAt: row.created_at as string,
+    updatedAt: (row.updated_at as string | undefined) ?? (row.created_at as string),
     pickupDate: row.pickup_date as string | undefined,
     rejectionReason: row.rejection_reason as string | undefined,
     attachmentFiles: loadLetterAttachments(id),
+    timeline: loadLetterTimeline(id),
   };
 }
 
@@ -387,6 +525,8 @@ export interface UpdateLetterInput {
   status?: LetterStatus;
   pickupDate?: string | null;
   rejectionReason?: string | null;
+  timelineNote?: string;
+  timelineOfficer?: string;
 }
 
 export function updateLetter(id: string, input: UpdateLetterInput): LetterRequest | null {
@@ -408,8 +548,9 @@ export function updateLetter(id: string, input: UpdateLetterInput): LetterReques
     throw new Error('Alasan penolakan wajib diisi');
   }
 
-  const updates: string[] = [];
-  const params: Record<string, string | null> = { id };
+  const ts = nowIso();
+  const updates: string[] = ['updated_at = @updatedAt'];
+  const params: Record<string, string | null> = { id, updatedAt: ts };
 
   if (input.status !== undefined) {
     updates.push('status = @status');
@@ -424,18 +565,28 @@ export function updateLetter(id: string, input: UpdateLetterInput): LetterReques
     params.rejectionReason = input.rejectionReason ?? null;
   }
 
-  if (updates.length === 0) {
+  if (updates.length === 1) {
     return getLetterById(id);
   }
 
   db.prepare(`UPDATE letter_requests SET ${updates.join(', ')} WHERE id = @id`).run(params);
+
+  if (input.status && input.status !== existing.status) {
+    addLetterTimelineEvent(
+      id,
+      LETTER_STATUS_TIMELINE_LABEL[input.status] ?? input.status,
+      ts,
+      input.timelineNote,
+      input.timelineOfficer,
+    );
+  }
 
   const updated = getLetterById(id)!;
   if (input.status && input.status !== existing.status) {
     notifyUserByNik(updated.requesterNIK, {
       type: 'letter_status',
       title: 'Status Surat Diperbarui',
-      message: `Pengajuan ${updated.requestNumber}: status ${input.status}`,
+      message: `Pengajuan ${updated.requestNumber}: ${LETTER_STATUS_TIMELINE_LABEL[input.status] ?? input.status}`,
       link: 'letter-service',
     });
   }
@@ -457,21 +608,23 @@ export interface CreateLetterInput {
   purpose: string;
   pickupDate?: string;
   attachmentFiles?: string[];
+  status?: LetterStatus;
 }
 
 export function createLetter(input: CreateLetterInput): LetterRequest {
   ensureDbReady();
   const id = `L${Date.now()}`;
-  const requestNumber = generateLetterNumber(input.letterTypeId);
+  const status = input.status ?? 'submitted';
+  const requestNumber = status === 'draft' ? `DRAFT-${id}` : generateLetterNumber(input.letterTypeId);
   const ts = nowIso();
 
   db.prepare(
     `INSERT INTO letter_requests (
-      id, request_number, requester_user_id, requester_name, requester_nik,
-      letter_type, purpose, status, pickup_date, created_at
+      id, request_number, requester_user_id, requester_name, requester_nik, requester_phone,
+      letter_type, purpose, status, pickup_date, created_at, updated_at
     ) VALUES (
-      @id, @requestNumber, @requesterUserId, @requesterName, @requesterNIK,
-      @letterType, @purpose, 'submitted', @pickupDate, @createdAt
+      @id, @requestNumber, @requesterUserId, @requesterName, @requesterNIK, @requesterPhone,
+      @letterType, @purpose, @status, @pickupDate, @createdAt, @updatedAt
     )`,
   ).run({
     id,
@@ -479,11 +632,17 @@ export function createLetter(input: CreateLetterInput): LetterRequest {
     requesterUserId: input.requesterUserId ?? null,
     requesterName: input.requesterName,
     requesterNIK: input.requesterNIK,
+    requesterPhone: input.requesterPhone ?? null,
     letterType: input.letterTypeName,
     purpose: input.purpose,
+    status,
     pickupDate: input.pickupDate ?? null,
     createdAt: ts,
+    updatedAt: ts,
   });
+
+  const timelineLabel = status === 'draft' ? 'Draft disimpan' : 'Pengajuan dikirim';
+  addLetterTimelineEvent(id, timelineLabel, ts);
 
   if (input.attachmentFiles?.length) {
     const insertAttachment = db.prepare(
@@ -494,22 +653,108 @@ export function createLetter(input: CreateLetterInput): LetterRequest {
     }
   }
 
+  if (input.requesterUserId) {
+    logUserActivity(input.requesterUserId, 'create_letter', requestNumber);
+  }
+
   return getLetterById(id)!;
 }
 
-export function listComplaints(nik?: string): Complaint[] {
+export interface UpdateUserLetterInput {
+  purpose?: string;
+  pickupDate?: string;
+  requesterPhone?: string;
+  attachmentFiles?: string[];
+  submit?: boolean;
+  letterTypeId?: string;
+  letterTypeName?: string;
+}
+
+export function updateUserLetter(id: string, requesterNik: string, input: UpdateUserLetterInput): LetterRequest {
+  ensureDbReady();
+  const existing = getLetterById(id);
+  if (!existing) {
+    throw new Error('Pengajuan surat tidak ditemukan');
+  }
+  if (existing.requesterNIK !== requesterNik) {
+    throw new Error('Anda tidak dapat mengedit pengajuan ini');
+  }
+  if (existing.status !== 'draft') {
+    throw new Error('Hanya draft yang dapat diedit');
+  }
+
+  const ts = nowIso();
+  const updates: string[] = ['updated_at = @updatedAt'];
+  const params: Record<string, string> = { id, updatedAt: ts };
+
+  if (input.purpose !== undefined) {
+    updates.push('purpose = @purpose');
+    params.purpose = input.purpose;
+  }
+  if (input.pickupDate !== undefined) {
+    updates.push('pickup_date = @pickupDate');
+    params.pickupDate = input.pickupDate;
+  }
+  if (input.requesterPhone !== undefined) {
+    updates.push('requester_phone = @requesterPhone');
+    params.requesterPhone = input.requesterPhone;
+  }
+  if (input.submit) {
+    updates.push('status = @status');
+    params.status = 'submitted';
+    if (existing.requestNumber.startsWith('DRAFT-') && input.letterTypeId) {
+      const newNumber = generateLetterNumber(input.letterTypeId);
+      updates.push('request_number = @requestNumber');
+      params.requestNumber = newNumber;
+    }
+  }
+
+  db.prepare(`UPDATE letter_requests SET ${updates.join(', ')} WHERE id = @id`).run(params);
+
+  if (input.attachmentFiles?.length) {
+    const insertAttachment = db.prepare(
+      'INSERT INTO letter_attachments (letter_id, filename) VALUES (@letterId, @filename)',
+    );
+    for (const filename of input.attachmentFiles) {
+      insertAttachment.run({ letterId: id, filename });
+    }
+  }
+
+  if (input.submit) {
+    addLetterTimelineEvent(id, 'Pengajuan dikirim', ts);
+  } else {
+    addLetterTimelineEvent(id, 'Draft diperbarui', ts);
+  }
+
+  return getLetterById(id)!;
+}
+
+export function listComplaints(
+  nik?: string,
+  pagination?: ListPagination,
+): { items: Complaint[]; total: number } {
   ensureDbReady();
   let sql = 'SELECT * FROM complaints';
+  let countSql = 'SELECT COUNT(*) as c FROM complaints';
   const params: Record<string, string> = {};
 
   if (nik) {
     sql += ' WHERE submitter_nik = @nik';
+    countSql += ' WHERE submitter_nik = @nik';
     params.nik = nik;
   }
   sql += ' ORDER BY created_at DESC';
 
+  const total = (db.prepare(countSql).get(params) as { c: number }).c;
+
+  if (pagination) {
+    sql += ' LIMIT @limit OFFSET @offset';
+    params.limit = String(pagination.limit);
+    params.offset = String((pagination.page - 1) * pagination.limit);
+  }
+
   const rows = db.prepare(sql).all(params) as Array<Record<string, unknown>>;
-  return rows.map(hydrateComplaint);
+  return { items: rows.map(hydrateComplaint), total };
 }
 
 function loadComplaintFiles(complaintId: string): string[] {
@@ -518,6 +763,41 @@ function loadComplaintFiles(complaintId: string): string[] {
     .all(complaintId) as Array<{ filename: string }>;
   return rows.map((r) => r.filename);
 }
+
+function loadComplaintTimeline(complaintId: string): TimelineEvent[] {
+  const rows = db
+    .prepare(
+      'SELECT status, timestamp, note, officer FROM complaint_timeline WHERE complaint_id = ? ORDER BY timestamp ASC',
+    )
+    .all(complaintId) as Array<{ status: string; timestamp: string; note: string | null; officer: string | null }>;
+
+  return rows.map((t) => ({
+    status: t.status,
+    timestamp: t.timestamp,
+    note: t.note ?? undefined,
+    officer: t.officer ?? undefined,
+  }));
+}
+
+function addComplaintTimelineEvent(
+  complaintId: string,
+  status: string,
+  timestamp?: string,
+  note?: string,
+  officer?: string,
+): void {
+  db.prepare(
+    'INSERT INTO complaint_timeline (complaint_id, status, timestamp, note, officer) VALUES (?, ?, ?, ?, ?)',
+  ).run(complaintId, status, timestamp ?? nowIso(), note ?? null, officer ?? null);
+}
+
+const COMPLAINT_STATUS_TIMELINE_LABEL: Partial<Record<ComplaintStatus, string>> = {
+  submitted: 'Pengaduan diterima',
+  reviewing: 'Sedang ditinjau',
+  processing: 'Sedang diproses',
+  resolved: 'Pengaduan diselesaikan',
+  closed: 'Pengaduan ditutup',
+};
 
 function hydrateComplaint(row: Record<string, unknown>): Complaint {
   const id = row.id as string;
@@ -535,6 +815,7 @@ function hydrateComplaint(row: Record<string, unknown>): Complaint {
     response: row.response as string | undefined,
     responseDate: row.response_date as string | undefined,
     files: loadComplaintFiles(id),
+    timeline: loadComplaintTimeline(id),
   };
 }
 
@@ -549,6 +830,10 @@ export function getComplaintById(id: string): Complaint | null {
 export interface UpdateComplaintInput {
   status?: ComplaintStatus;
   response?: string;
+  timelineNote?: string;
+  timelineOfficer?: string;
+  auditActorId?: string;
+  auditActorName?: string;
 }
 
 export function updateComplaint(id: string, input: UpdateComplaintInput): Complaint | null {
@@ -570,8 +855,9 @@ export function updateComplaint(id: string, input: UpdateComplaintInput): Compla
     throw new Error('Tanggapan wajib diisi saat menyelesaikan pengaduan');
   }
 
+  const ts = nowIso();
   const updates: string[] = ['updated_at = @updatedAt'];
-  const params: Record<string, string | null> = { id, updatedAt: nowIso() };
+  const params: Record<string, string | null> = { id, updatedAt: ts };
 
   if (input.status !== undefined) {
     updates.push('status = @status');
@@ -581,10 +867,22 @@ export function updateComplaint(id: string, input: UpdateComplaintInput): Compla
     updates.push('response = @response');
     params.response = input.response;
     updates.push('response_date = @responseDate');
-    params.responseDate = input.response ? nowIso() : null;
+    params.responseDate = input.response ? ts : null;
   }
 
   db.prepare(`UPDATE complaints SET ${updates.join(', ')} WHERE id = @id`).run(params);
+
+  if (input.status && input.status !== existing.status) {
+    addComplaintTimelineEvent(
+      id,
+      COMPLAINT_STATUS_TIMELINE_LABEL[input.status] ?? input.status,
+      ts,
+      input.timelineNote,
+      input.timelineOfficer,
+    );
+  } else if (input.response && input.response !== existing.response) {
+    addComplaintTimelineEvent(id, 'Tanggapan diberikan', ts, input.timelineNote, input.timelineOfficer);
+  }
 
   const updated = getComplaintById(id)!;
   if (
@@ -599,6 +897,17 @@ export function updateComplaint(id: string, input: UpdateComplaintInput): Compla
         link: 'complaints',
       });
     }
+  }
+
+  if (input.auditActorId && input.auditActorName && input.status && input.status !== existing.status) {
+    createAuditLog({
+      actorId: input.auditActorId,
+      actorName: input.auditActorName,
+      action: 'update_complaint_status',
+      entityType: 'complaint',
+      entityId: id,
+      details: `Status ${existing.status} → ${input.status}`,
+    });
   }
 
   return updated;
@@ -654,6 +963,12 @@ export function createComplaint(input: CreateComplaintInput): Complaint {
     }
   }
 
+  addComplaintTimelineEvent(id, 'Pengaduan dibuat', ts);
+
+  if (input.submitterUserId) {
+    logUserActivity(input.submitterUserId, 'create_complaint', complaintNumber);
+  }
+
   return getComplaintById(id)!;
 }
 
@@ -662,24 +977,25 @@ export function listOfficers(): Officer[] {
   const rows = db.prepare('SELECT * FROM officers ORDER BY name').all() as Array<Record<string, unknown>>;
 
   return rows.map((row) => {
-    const name = row.name as string;
+    const id = row.id as string;
     const assignedCases = (
       db
         .prepare(
           `SELECT COUNT(*) as c FROM reports
-           WHERE assigned_to = ? AND status NOT IN ('completed', 'rejected')`,
+           WHERE assigned_officer_id = ? AND status NOT IN ('completed', 'rejected')`,
         )
-        .get(name) as { c: number }
+        .get(id) as { c: number }
     ).c;
     const completedCases = (
       db
-        .prepare(`SELECT COUNT(*) as c FROM reports WHERE assigned_to = ? AND status = 'completed'`)
-        .get(name) as { c: number }
+        .prepare(`SELECT COUNT(*) as c FROM reports WHERE assigned_officer_id = ? AND status = 'completed'`)
+        .get(id) as { c: number }
     ).c;
 
     return {
-      id: row.id as string,
-      name,
+      id,
+      userId: row.user_id as string | undefined,
+      name: row.name as string,
       rank: row.rank as string,
       email: row.email as string,
       phone: row.phone as string,
@@ -688,6 +1004,13 @@ export function listOfficers(): Officer[] {
       completedCases,
     };
   });
+}
+
+export function getOfficerByUserId(userId: string): Officer | null {
+  ensureDbReady();
+  const row = db.prepare('SELECT id FROM officers WHERE user_id = ?').get(userId) as { id: string } | undefined;
+  if (!row) return null;
+  return getOfficerById(row.id);
 }
 
 export function getOfficerById(id: string): Officer | null {

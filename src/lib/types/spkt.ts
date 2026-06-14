@@ -50,6 +50,7 @@ export interface Report {
   createdAt: string;
   updatedAt: string;
   assignedTo?: string;
+  assignedOfficerId?: string;
   assignedBy?: string;
   assignedAt?: string;
   notes?: string;
@@ -63,13 +64,16 @@ export interface LetterRequest {
   requestNumber: string;
   requesterName: string;
   requesterNIK: string;
+  requesterPhone?: string;
   letterType: string;
   purpose: string;
   status: LetterStatus;
   createdAt: string;
+  updatedAt?: string;
   pickupDate?: string;
   attachmentFiles?: string[];
   rejectionReason?: string;
+  timeline: TimelineEvent[];
 }
 
 export interface Complaint {
@@ -86,10 +90,12 @@ export interface Complaint {
   response?: string;
   responseDate?: string;
   files?: string[];
+  timeline: TimelineEvent[];
 }
 
 export interface Officer {
   id: string;
+  userId?: string;
   name: string;
   rank: string;
   email: string;

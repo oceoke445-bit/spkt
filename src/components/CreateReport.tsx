@@ -41,12 +41,14 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
 
   const [submitting, setSubmitting] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [existingEvidenceFiles, setExistingEvidenceFiles] = useState<string[]>([]);
 
   useEffect(() => {
     if (!draftId) return;
     spktApi.getReport(draftId).then(({ report }) => {
       if (report.status !== 'draft') return;
       setEditingDraftId(draftId);
+      setExistingEvidenceFiles(report.evidenceFiles ?? []);
       setFormData({
         name: report.reporterName,
         nik: report.reporterNIK,
@@ -66,10 +68,10 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
     setSubmitting(true);
 
     try {
-      let evidenceFiles: string[] = [];
+      let evidenceFiles: string[] = [...existingEvidenceFiles];
       if (formData.files.length > 0) {
         const { files: uploaded } = await spktApi.uploadFiles(formData.files);
-        evidenceFiles = uploaded.map((f) => f.storedName);
+        evidenceFiles = [...evidenceFiles, ...uploaded.map((f) => f.storedName)];
       }
 
       const { report } = editingDraftId
@@ -110,10 +112,10 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
 
   const handleSaveDraft = async () => {
     try {
-      let evidenceFiles: string[] = [];
+      let evidenceFiles: string[] = [...existingEvidenceFiles];
       if (formData.files.length > 0) {
         const { files: uploaded } = await spktApi.uploadFiles(formData.files);
-        evidenceFiles = uploaded.map((f) => f.storedName);
+        evidenceFiles = [...evidenceFiles, ...uploaded.map((f) => f.storedName)];
       }
 
       if (editingDraftId) {
@@ -324,6 +326,8 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
             <FileUploadZone
               files={formData.files}
               onFilesChange={(files) => setFormData((prev) => ({ ...prev, files }))}
+              existingStoredFiles={existingEvidenceFiles}
+              onExistingFilesChange={setExistingEvidenceFiles}
               subHint="PNG, JPG, PDF hingga 10MB (Maksimal 5 file)"
             />
           </CardContent>

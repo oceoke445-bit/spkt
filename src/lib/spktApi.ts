@@ -58,6 +58,7 @@ export interface CreateReportPayload {
 export interface UpdateReportPayload {
   status?: ReportStatus;
   assignedTo?: string;
+  assignedOfficerId?: string;
   assignedBy?: string;
   notes?: string;
   timelineNote?: string;
@@ -75,12 +76,20 @@ export interface CreateLetterPayload {
   purpose: string;
   pickupDate?: string;
   attachmentFiles?: string[];
+  status?: LetterStatus;
 }
 
 export interface UpdateLetterPayload {
   status?: LetterStatus;
   pickupDate?: string | null;
   rejectionReason?: string | null;
+  purpose?: string;
+  requesterPhone?: string;
+  attachmentFiles?: string[];
+  submit?: boolean;
+  letterTypeId?: string;
+  letterTypeName?: string;
+  timelineNote?: string;
 }
 
 export interface UpdateUserReportPayload {
@@ -125,6 +134,8 @@ export interface UserPreferences {
   reportUpdate: boolean;
   letterReady: boolean;
   systemNews: boolean;
+  publicProfile: boolean;
+  activityHistory: boolean;
 }
 
 export interface InfoArticle {
@@ -151,6 +162,35 @@ export interface UpdateComplaintPayload {
   response?: string;
 }
 
+export interface PaginatedMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface AuditLogItem {
+  id: string;
+  actorId: string;
+  actorName: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  details: string;
+  createdAt: string;
+}
+
+export interface TrackResult {
+  found: boolean;
+  serviceType: 'report' | 'letter' | 'complaint';
+  referenceNumber: string;
+  status: string;
+  statusLabel: string;
+  createdAt: string;
+  timeline: Array<{ status: string; timestamp: string; note?: string; officer?: string }>;
+  summary?: string;
+}
+
 export const spktApi = {
   getSession: () => request<{ user: LoginResponse['user'] | null }>('/auth/session'),
 
@@ -160,9 +200,21 @@ export const spktApi = {
     }),
 
   login: (email: string, password: string) =>
-    request<LoginResponse>('/auth/login', {
+    request<LoginResponse | { requires2fa: true; tempToken: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+    }),
+
+  verify2fa: (tempToken: string, code: string) =>
+    request<LoginResponse>('/auth/verify-2fa', {
+      method: 'POST',
+      body: JSON.stringify({ tempToken, code }),
+    }),
+
+  forgotPassword: (email: string, nik: string, newPassword: string) =>
+    request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, nik, newPassword }),
     }),
 
   register: (payload: RegisterPayload) =>
@@ -186,18 +238,72 @@ export const spktApi = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
 
+  exportMyData: async () => {
+    const response = await fetch('/api/users/me/export', { credentials: 'same-origin' });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error((data as { error?: string }).error || 'Gagal mengunduh data');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `spkt-data-export.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
+
+  deleteAccount: (password: string) =>
+    request<{ message: string }>('/users/me/export', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    }),
+
+  getTotpStatus: () => request<{ enabled: boolean; hasSecret: boolean }>('/users/me/totp'),
+
+  setupTotp: () =>
+    request<{ secret: string; uri: string; message: string }>('/users/me/totp', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'setup' }),
+    }),
+
+  enableTotp: (code: string) =>
+    request<{ message: string; enabled: boolean }>('/users/me/totp', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'enable', code }),
+    }),
+
+  disableTotp: (code: string) =>
+    request<{ message: string; enabled: boolean }>('/users/me/totp', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'disable', code }),
+    }),
+
+  trackService: (type: 'report' | 'letter' | 'complaint', number: string, nik: string) =>
+    request<{ track: TrackResult }>(
+      `/track?type=${encodeURIComponent(type)}&number=${encodeURIComponent(number)}&nik=${encodeURIComponent(nik)}`,
+    ),
+
+  getAuditLogs: (page = 1, limit = 20) =>
+    request<{ logs: AuditLogItem[]; pagination: PaginatedMeta }>(
+      `/audit-logs?page=${page}&limit=${limit}`,
+    ),
+
   updateUser: (id: string, payload: { name?: string; email?: string; role?: string; active?: boolean }) =>
     request<{ message: string }>(`/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
-  getReports: (params?: { nik?: string; assignedTo?: string }) => {
+  getReports: (params?: { nik?: string; assignedTo?: string; assignedOfficerId?: string; page?: number; limit?: number }) => {
     const search = new URLSearchParams();
     if (params?.nik) search.set('nik', params.nik);
     if (params?.assignedTo) search.set('assignedTo', params.assignedTo);
+    if (params?.assignedOfficerId) search.set('assignedOfficerId', params.assignedOfficerId);
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.limit) search.set('limit', String(params.limit));
     const qs = search.toString();
-    return request<{ reports: Report[] }>(`/reports${qs ? `?${qs}` : ''}`);
+    return request<{ reports: Report[]; pagination?: PaginatedMeta }>(`/reports${qs ? `?${qs}` : ''}`);
   },
 
   getReport: (id: string) => request<{ report: Report }>(`/reports/${id}`),
@@ -220,9 +326,13 @@ export const spktApi = {
       body: JSON.stringify(payload),
     }),
 
-  getLetters: (nik?: string) => {
-    const qs = nik ? `?nik=${encodeURIComponent(nik)}` : '';
-    return request<{ letters: LetterRequest[] }>(`/letters${qs}`);
+  getLetters: (params?: { nik?: string; page?: number; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.nik) search.set('nik', params.nik);
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.limit) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    return request<{ letters: LetterRequest[]; pagination?: PaginatedMeta }>(`/letters${qs ? `?${qs}` : ''}`);
   },
 
   createLetter: (payload: CreateLetterPayload) =>
@@ -239,9 +349,13 @@ export const spktApi = {
       body: JSON.stringify(payload),
     }),
 
-  getComplaints: (nik?: string) => {
-    const qs = nik ? `?nik=${encodeURIComponent(nik)}` : '';
-    return request<{ complaints: Complaint[] }>(`/complaints${qs}`);
+  getComplaints: (params?: { nik?: string; page?: number; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.nik) search.set('nik', params.nik);
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.limit) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    return request<{ complaints: Complaint[]; pagination?: PaginatedMeta }>(`/complaints${qs ? `?${qs}` : ''}`);
   },
 
   createComplaint: (payload: CreateComplaintPayload) =>
@@ -260,7 +374,7 @@ export const spktApi = {
 
   getOfficers: () => request<{ officers: Officer[] }>('/officers'),
 
-  getUsers: () =>
+  getUsers: (page = 1, limit = 50) =>
     request<{
       users: Array<{
         id: string;
@@ -271,7 +385,7 @@ export const spktApi = {
         nik?: string;
         phone?: string;
       }>;
-    }>('/users'),
+    }>(`/users?page=${page}&limit=${limit}`),
 
   getAdminStats: () =>
     request<{
@@ -312,7 +426,7 @@ export const spktApi = {
 
   updateOfficer: (
     id: string,
-    payload: Partial<{ name: string; rank: string; email: string; phone: string; status: string }>,
+    payload: Partial<{ name: string; rank: string; email: string; phone: string; status: string; userId: string | null }>,
   ) =>
     request<{ message: string }>(`/officers/${id}`, {
       method: 'PATCH',
@@ -348,6 +462,23 @@ export const spktApi = {
     }),
 
   getInfoArticles: () => request<{ articles: InfoArticle[] }>('/info/articles'),
+
+  createInfoArticle: (payload: Omit<InfoArticle, 'id' | 'date'> & { content: string }) =>
+    request<{ article: InfoArticle }>('/info/articles', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateInfoArticle: (id: string, payload: Partial<Omit<InfoArticle, 'id' | 'date'>>) =>
+    request<{ article: InfoArticle }>(`/info/articles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteInfoArticle: (id: string) =>
+    request<{ message: string }>(`/info/articles/${id}`, { method: 'DELETE' }),
+
+  getLetterPdfUrl: (id: string) => `/api/letters/${id}/pdf`,
 
   suspendUserByNik: async (nik: string) => {
     const { users } = await request<{ users: Array<{ id: string; nik?: string }> }>('/users');

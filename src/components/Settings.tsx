@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Alert, AlertDescription } from './ui/alert';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   User,
@@ -46,6 +47,8 @@ export const Settings: React.FC = () => {
     reportUpdate: true,
     letterReady: true,
     systemNews: false,
+    publicProfile: false,
+    activityHistory: true,
   });
 
   const [profileData, setProfileData] = useState({
@@ -74,6 +77,16 @@ export const Settings: React.FC = () => {
     spktApi.getPreferences().then(({ preferences }) => {
       setNotifications(preferences);
     }).catch(() => {});
+  }, []);
+
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [totpEnabled, setTotpEnabled] = useState(false);
+  const [totpSetup, setTotpSetup] = useState<{ secret: string; uri: string } | null>(null);
+  const [totpCode, setTotpCode] = useState('');
+
+  useEffect(() => {
+    spktApi.getTotpStatus().then((s) => setTotpEnabled(s.enabled)).catch(() => {});
   }, []);
 
   const [passwordData, setPasswordData] = useState({
@@ -165,6 +178,58 @@ export const Settings: React.FC = () => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
+  };
+
+  const handleExportData = async () => {
+    try {
+      await spktApi.exportMyData();
+      toast.success('Data berhasil diunduh');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengunduh data');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await spktApi.deleteAccount(deletePassword);
+      toast.success('Akun dihapus');
+      window.location.reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menghapus akun');
+    }
+  };
+
+  const handleSetupTotp = async () => {
+    try {
+      const result = await spktApi.setupTotp();
+      setTotpSetup({ secret: result.secret, uri: result.uri });
+      toast.success('Secret 2FA dibuat. Masukkan ke aplikasi authenticator.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal setup 2FA');
+    }
+  };
+
+  const handleEnableTotp = async () => {
+    try {
+      await spktApi.enableTotp(totpCode);
+      setTotpEnabled(true);
+      setTotpSetup(null);
+      setTotpCode('');
+      toast.success('2FA diaktifkan');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Kode tidak valid');
+    }
+  };
+
+  const handleDisableTotp = async () => {
+    try {
+      await spktApi.disableTotp(totpCode);
+      setTotpEnabled(false);
+      setTotpCode('');
+      toast.success('2FA dinonaktifkan');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Kode tidak valid');
+    }
   };
 
   return (
@@ -405,15 +470,34 @@ export const Settings: React.FC = () => {
 
           <Card className={cardClass}>
             <CardHeader>
-              <CardTitle className="text-white">Keamanan Akun</CardTitle>
+              <CardTitle className="text-white">Autentikasi Dua Faktor (2FA)</CardTitle>
               <CardDescription className="text-blue-200">
-                Autentikasi dua faktor dan riwayat login akan tersedia pada rilis berikutnya.
+                Lindungi akun dengan kode dari aplikasi authenticator (Google Authenticator, Authy, dll.)
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <p className="text-sm text-blue-200">
-                Saat ini Anda dapat mengubah password melalui formulir di atas. Pastikan password kuat dan unik.
+                Status: {totpEnabled ? <span className="text-green-300 font-medium">Aktif</span> : <span className="text-amber-300">Nonaktif</span>}
               </p>
+              {!totpEnabled && !totpSetup && (
+                <Button onClick={handleSetupTotp} className="bg-sky-500 hover:bg-sky-600 text-white">
+                  <Key className="w-4 h-4 mr-2" /> Setup 2FA
+                </Button>
+              )}
+              {totpSetup && (
+                <div className="space-y-3 p-3 rounded-lg bg-blue-950/50 border border-blue-500/30">
+                  <p className="text-xs text-blue-300 break-all">Secret: {totpSetup.secret}</p>
+                  <p className="text-xs text-blue-400">Atau scan URI di aplikasi authenticator</p>
+                  <Input value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Kode 6 digit" className="bg-blue-900/50 border-blue-500/50 text-white" />
+                  <Button onClick={handleEnableTotp} className="w-full bg-gradient-to-r from-green-500 to-green-600">Aktifkan 2FA</Button>
+                </div>
+              )}
+              {totpEnabled && (
+                <div className="space-y-3">
+                  <Input value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Kode untuk nonaktifkan" className="bg-blue-900/50 border-blue-500/50 text-white" />
+                  <Button variant="destructive" onClick={handleDisableTotp} className="w-full">Nonaktifkan 2FA</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -545,7 +629,10 @@ export const Settings: React.FC = () => {
                   <h4 className="font-medium text-white">Tampilkan Profil Publik</h4>
                   <p className="text-sm text-blue-200">Izinkan orang lain melihat profil Anda</p>
                 </div>
-                <Switch />
+                <Switch
+                  checked={notifications.publicProfile}
+                  onCheckedChange={(checked) => handleNotificationChange('publicProfile', checked)}
+                />
               </div>
 
               <div className={itemClass}>
@@ -553,7 +640,10 @@ export const Settings: React.FC = () => {
                   <h4 className="font-medium text-white">Riwayat Aktivitas</h4>
                   <p className="text-sm text-blue-200">Simpan riwayat aktivitas Anda</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={notifications.activityHistory}
+                  onCheckedChange={(checked) => handleNotificationChange('activityHistory', checked)}
+                />
               </div>
 
               <Separator className="bg-blue-500/30" />
@@ -561,11 +651,7 @@ export const Settings: React.FC = () => {
               <div className="space-y-3">
                 <Button
                   type="button"
-                  onClick={() =>
-                    toast.success('Data sedang disiapkan', {
-                      description: 'File akan tersedia untuk diunduh dalam beberapa saat',
-                    })
-                  }
+                  onClick={handleExportData}
                   className="w-full justify-start bg-sky-500 hover:bg-sky-600 text-white shadow-md border border-sky-400/50 [&_svg]:text-sky-100"
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -573,11 +659,7 @@ export const Settings: React.FC = () => {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() =>
-                    toast.error('Penghapusan akun memerlukan verifikasi', {
-                      description: 'Hubungi admin SPKT untuk proses penghapusan akun',
-                    })
-                  }
+                  onClick={() => setShowDeleteDialog(true)}
                   className="w-full justify-start bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md [&_svg]:text-red-100"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -600,6 +682,27 @@ export const Settings: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="bg-blue-900 border-blue-500/50">
+          <DialogHeader>
+            <DialogTitle className="text-white">Hapus Akun</DialogTitle>
+            <DialogDescription className="text-blue-200">
+              Masukkan password untuk mengonfirmasi penghapusan permanen.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            placeholder="Password Anda"
+            className="bg-blue-950/60 border-blue-500/50 text-white"
+          />
+          <Button variant="destructive" onClick={handleDeleteAccount} className="w-full">
+            Hapus Akun Permanen
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

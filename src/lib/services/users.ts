@@ -216,6 +216,8 @@ export interface UserPreferences {
   reportUpdate: boolean;
   letterReady: boolean;
   systemNews: boolean;
+  publicProfile: boolean;
+  activityHistory: boolean;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -225,6 +227,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   reportUpdate: true,
   letterReady: true,
   systemNews: false,
+  publicProfile: false,
+  activityHistory: true,
 };
 
 export function getUserPreferences(userId: string): UserPreferences {
@@ -247,6 +251,11 @@ export function updateUserPreferences(userId: string, input: Partial<UserPrefere
   const current = getUserPreferences(userId);
   const merged = { ...current, ...input };
   db.prepare('UPDATE users SET preferences_json = ? WHERE id = ?').run(JSON.stringify(merged), userId);
+
+  if (input.activityHistory === false) {
+    db.prepare('DELETE FROM user_activities WHERE user_id = ?').run(userId);
+  }
+
   return merged;
 }
 
@@ -275,6 +284,23 @@ export function updateUserByAdmin(
   if (input.role !== undefined) {
     updates.push('role = @role');
     params.role = input.role;
+    if (input.role === 'petugas') {
+      const existingOfficer = db
+        .prepare('SELECT id FROM officers WHERE user_id = ?')
+        .get(id) as { id: string } | undefined;
+      if (!existingOfficer) {
+        const user = getUserById(id);
+        if (user) {
+          createOfficer({
+            name: user.name,
+            rank: 'Brigadir',
+            email: user.email,
+            phone: user.phone ?? '',
+            userId: id,
+          });
+        }
+      }
+    }
   }
   if (input.active !== undefined) {
     updates.push('active = @active');
@@ -309,6 +335,10 @@ export function createOfficer(input: CreateOfficerInput): void {
     phone: input.phone,
     status: input.status ?? 'available',
   });
+
+  if (input.userId) {
+    db.prepare("UPDATE users SET role = 'petugas' WHERE id = ?").run(input.userId);
+  }
 }
 
 export function updateOfficer(
@@ -346,6 +376,10 @@ export function updateOfficer(
 
   if (updates.length === 0) return;
   db.prepare(`UPDATE officers SET ${updates.join(', ')} WHERE id = @id`).run(params);
+
+  if (input.userId) {
+    db.prepare("UPDATE users SET role = 'petugas' WHERE id = ?").run(input.userId);
+  }
 }
 
 export function deleteOfficer(id: string): void {
@@ -362,9 +396,9 @@ export function deleteOfficer(id: string): void {
     db
       .prepare(
         `SELECT COUNT(*) as c FROM reports
-         WHERE assigned_to = ? AND status NOT IN ('completed', 'rejected')`,
+         WHERE assigned_officer_id = ? AND status NOT IN ('completed', 'rejected')`,
       )
-      .get(row.name) as { c: number }
+      .get(id) as { c: number }
   ).c;
 
   if (activeReports > 0) {

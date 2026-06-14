@@ -22,8 +22,15 @@ import { Information } from '@/components/Information';
 import { Complaints } from '@/components/Complaints';
 import { Settings } from '@/components/Settings';
 import { AdminCSI } from '@/components/AdminCSI';
+import { AdminArticleManagement } from '@/components/AdminArticleManagement';
 
 const VIEW_PARAM = 'view';
+
+const ROLE_VIEWS: Record<string, string[]> = {
+  user: ['dashboard', 'create-report', 'my-reports', 'letter-service', 'complaints', 'information', 'settings'],
+  petugas: ['dashboard', 'incoming-reports', 'letter-service', 'complaints', 'information', 'settings'],
+  admin: ['dashboard', 'all-reports', 'letter-service', 'complaints', 'user-management', 'officer-management', 'statistics', 'csi-dashboard', 'information', 'article-management', 'settings'],
+};
 
 export default function DashboardApp() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -48,6 +55,11 @@ export default function DashboardApp() {
     if (!loading && isAuthenticated && user) {
       const view = searchParams.get(VIEW_PARAM);
       if (!view) {
+        navigate('dashboard');
+        return;
+      }
+      const allowed = ROLE_VIEWS[user.role] ?? ['dashboard'];
+      if (!allowed.includes(view)) {
         navigate('dashboard');
       }
     }
@@ -132,6 +144,8 @@ export default function DashboardApp() {
           return <AdminCSI />;
         case 'information':
           return <Information />;
+        case 'article-management':
+          return <AdminArticleManagement />;
         case 'settings':
           return <Settings />;
         default:

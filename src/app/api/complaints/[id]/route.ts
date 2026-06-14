@@ -31,6 +31,10 @@ export const PATCH = handleApi(async (request, context: { params: Promise<{ id: 
   const complaint = updateComplaint(id, {
     status: body.status,
     response: body.response,
+    timelineNote: body.timelineNote,
+    timelineOfficer: sessionUser.name,
+    auditActorId: sessionUser.id,
+    auditActorName: sessionUser.name,
   });
 
   if (!complaint) {

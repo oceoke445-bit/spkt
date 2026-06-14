@@ -12,11 +12,12 @@ import { letterTypes, getStatusBadgeColor, getStatusLabel } from '@/lib/data/moc
 import { spktApi } from '@/lib/spktApi';
 import { spktDialogClass } from '@/lib/spktDialog';
 import { useLetters } from '@/hooks/useLetters';
+import { SpktPagination } from './SpktPagination';
 import { CsiPromptButton } from './CsiPromptButton';
 import { useCsiEligibility } from '@/hooks/useCsiEligibility';
 import { FileUploadZone } from './FileUploadZone';
 import { DatePickerField } from '@/components/DatePickerField';
-import { Mail, FileText, CheckCircle2, ArrowLeft, User, Save, Eye } from 'lucide-react';
+import { Mail, FileText, CheckCircle2, ArrowLeft, User, Save, Eye, Clock, Download } from 'lucide-react';
 import { IconBadge, letterTypeIcons } from './iconStyles';
 import { toast } from 'sonner';
 import type { LetterRequest, LetterStatus } from '@/lib/types/spkt';
@@ -48,8 +49,10 @@ export const LetterService: React.FC = () => {
     documents: [] as File[]
   });
 
-  const { letters: userLetters, refresh: refreshLetters } = useLetters(nikFilter);
+  const { letters: userLetters, refresh: refreshLetters, page, setPage, total, totalPages } = useLetters(nikFilter);
   const [submitting, setSubmitting] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [existingAttachments, setExistingAttachments] = useState<string[]>([]);
   const [managingLetter, setManagingLetter] = useState<LetterRequest | null>(null);
   const [staffStatus, setStaffStatus] = useState<LetterStatus>('submitted');
   const [staffPickupDate, setStaffPickupDate] = useState('');
@@ -73,7 +76,63 @@ export const LetterService: React.FC = () => {
 
   const handleSelectLetter = (letter: LetterType) => {
     setSelectedLetter(letter);
+    setEditingDraftId(null);
+    setExistingAttachments([]);
     setShowForm(true);
+  };
+
+  const continueDraft = (letter: LetterRequest) => {
+    const type = letterTypes.find((t) => letter.letterType.includes(t.name) || t.name === letter.letterType);
+    if (type) setSelectedLetter(type);
+    setEditingDraftId(letter.id);
+    setExistingAttachments(letter.attachmentFiles ?? []);
+    setFormData({
+      name: letter.requesterName,
+      nik: letter.requesterNIK,
+      phone: letter.requesterPhone ?? user?.phone ?? '',
+      purpose: letter.purpose,
+      pickupDate: letter.pickupDate ?? '',
+      documents: [],
+    });
+    setShowForm(true);
+  };
+
+  const handleSaveDraft = async () => {
+    if (!selectedLetter) return;
+    try {
+      let attachmentFiles: string[] = [...existingAttachments];
+      if (formData.documents.length > 0) {
+        const { files } = await spktApi.uploadFiles(formData.documents);
+        attachmentFiles = [...attachmentFiles, ...files.map((f) => f.storedName)];
+      }
+
+      if (editingDraftId) {
+        await spktApi.updateLetter(editingDraftId, {
+          purpose: formData.purpose || 'Draft surat',
+          pickupDate: formData.pickupDate,
+          requesterPhone: formData.phone,
+          attachmentFiles,
+        });
+      } else {
+        const { letter } = await spktApi.createLetter({
+          requesterUserId: user?.id,
+          requesterName: formData.name,
+          requesterNIK: formData.nik,
+          requesterPhone: formData.phone,
+          letterTypeId: selectedLetter.id,
+          letterTypeName: selectedLetter.name,
+          purpose: formData.purpose || 'Draft surat',
+          pickupDate: formData.pickupDate || undefined,
+          attachmentFiles,
+          status: 'draft',
+        });
+        setEditingDraftId(letter.id);
+      }
+      await refreshLetters();
+      toast.success('Draft tersimpan');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan draft');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,23 +141,35 @@ export const LetterService: React.FC = () => {
 
     setSubmitting(true);
     try {
-      let attachmentFiles: string[] = [];
+      let attachmentFiles: string[] = [...existingAttachments];
       if (formData.documents.length > 0) {
         const { files } = await spktApi.uploadFiles(formData.documents);
-        attachmentFiles = files.map((f) => f.storedName);
+        attachmentFiles = [...attachmentFiles, ...files.map((f) => f.storedName)];
       }
 
-      const { letter } = await spktApi.createLetter({
-        requesterUserId: user?.id,
-        requesterName: formData.name,
-        requesterNIK: formData.nik,
-        requesterPhone: formData.phone,
-        letterTypeId: selectedLetter.id,
-        letterTypeName: selectedLetter.name,
-        purpose: formData.purpose,
-        pickupDate: formData.pickupDate || undefined,
-        attachmentFiles,
-      });
+      if (editingDraftId) {
+        await spktApi.updateLetter(editingDraftId, {
+          purpose: formData.purpose,
+          pickupDate: formData.pickupDate,
+          requesterPhone: formData.phone,
+          attachmentFiles,
+          submit: true,
+          letterTypeId: selectedLetter.id,
+          letterTypeName: selectedLetter.name,
+        });
+      } else {
+        await spktApi.createLetter({
+          requesterUserId: user?.id,
+          requesterName: formData.name,
+          requesterNIK: formData.nik,
+          requesterPhone: formData.phone,
+          letterTypeId: selectedLetter.id,
+          letterTypeName: selectedLetter.name,
+          purpose: formData.purpose,
+          pickupDate: formData.pickupDate || undefined,
+          attachmentFiles,
+        });
+      }
 
       await refreshLetters();
       toast.success('Pengajuan berhasil!', {
@@ -106,6 +177,8 @@ export const LetterService: React.FC = () => {
       });
       setShowForm(false);
       setSelectedLetter(null);
+      setEditingDraftId(null);
+      setExistingAttachments([]);
       setFormData((prev) => ({ ...prev, purpose: '', pickupDate: '', documents: [] }));
     } catch (err) {
       toast.error('Gagal mengajukan surat', {
@@ -203,6 +276,7 @@ export const LetterService: React.FC = () => {
                 ))}
               </div>
             )}
+            <SpktPagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
           </CardContent>
         </Card>
       )}
@@ -267,11 +341,18 @@ export const LetterService: React.FC = () => {
                           {getStatusLabel(letter.status)}
                         </span>
                       </div>
-                      <div className="text-sm text-blue-200">
-                        <p>Keperluan: {letter.purpose}</p>
-                        <p className="text-xs text-blue-300 mt-2">
-                          Diajukan: {new Date(letter.createdAt).toLocaleDateString('id-ID')}
-                        </p>
+                      <p className="text-sm text-blue-200">Keperluan: {letter.purpose}</p>
+                      <p className="text-xs text-blue-300 mt-1">
+                        {letter.status === 'draft' ? 'Draft' : 'Diajukan'}: {new Date(letter.createdAt).toLocaleDateString('id-ID')}
+                      </p>
+                      <div className="pt-3 border-t border-blue-600/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
+                        {letter.status === 'draft' ? (
+                          <Button size="sm" onClick={(e) => { e.stopPropagation(); continueDraft(letter); }} className="bg-amber-500 hover:bg-amber-600">
+                            Lanjutkan Draft
+                          </Button>
+                        ) : (
+                          <p className="text-xs text-blue-300">Klik untuk detail & timeline</p>
+                        )}
                         {letter.pickupDate && letter.status === 'ready' && (
                           <div className="mt-3 p-3 bg-green-900/50 border border-green-500/50 rounded-lg backdrop-blur">
                             <p className="text-green-100 font-medium text-sm flex items-center gap-2">
@@ -293,6 +374,7 @@ export const LetterService: React.FC = () => {
                   ))}
                 </div>
               )}
+              <SpktPagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
             </CardContent>
           </Card>
         </>
@@ -394,6 +476,8 @@ export const LetterService: React.FC = () => {
                 <FileUploadZone
                   files={formData.documents}
                   onFilesChange={(documents) => setFormData((prev) => ({ ...prev, documents }))}
+                  existingStoredFiles={existingAttachments}
+                  onExistingFilesChange={setExistingAttachments}
                   hint="Upload KTP, KK, atau dokumen lainnya"
                   subHint="PDF atau gambar, maksimal 5MB"
                   maxSizeMb={5}
@@ -423,6 +507,11 @@ export const LetterService: React.FC = () => {
                   <FileText className="w-4 h-4 mr-2" />
                   Ajukan Permohonan
                 </Button>
+                {!isStaff && (
+                  <Button type="button" size="lg" variant="outline" onClick={handleSaveDraft} className="border-blue-400/50 text-blue-100">
+                    <Save className="w-4 h-4 mr-2" /> Simpan Draft
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="lg"
@@ -453,10 +542,30 @@ export const LetterService: React.FC = () => {
             <div className="space-y-3 text-sm text-blue-100">
               <p>Keperluan: {viewingLetter.purpose}</p>
               <p>Status: {getStatusLabel(viewingLetter.status)}</p>
+              {viewingLetter.timeline?.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-white flex items-center gap-2 mb-2"><Clock className="w-4 h-4" /> Timeline</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {viewingLetter.timeline.map((event, i) => (
+                      <div key={i} className="text-xs bg-blue-900/40 p-2 rounded border border-blue-500/30">
+                        <p className="text-white">{event.status}</p>
+                        <p className="text-blue-400">{new Date(event.timestamp).toLocaleString('id-ID')}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {viewingLetter.pickupDate && viewingLetter.status === 'ready' && (
                 <p className="text-green-200">
                   Siap diambil: {new Date(viewingLetter.pickupDate).toLocaleDateString('id-ID')}
                 </p>
+              )}
+              {['ready', 'completed', 'verified'].includes(viewingLetter.status) && (
+                <Button asChild className="bg-sky-500 hover:bg-sky-600">
+                  <a href={spktApi.getLetterPdfUrl(viewingLetter.id)} target="_blank" rel="noopener noreferrer">
+                    <Download className="w-4 h-4 mr-2" /> Unduh PDF
+                  </a>
+                </Button>
               )}
               {(viewingLetter.status === 'ready' || viewingLetter.status === 'completed') && (
                 <CsiPromptButton
