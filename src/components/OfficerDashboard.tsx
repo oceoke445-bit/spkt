@@ -333,12 +333,11 @@ export const OfficerDashboard: React.FC = () => {
                           <span className="text-sm truncate text-blue-100 flex-1">{file}</span>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="shrink-0 border-blue-400/50 text-cyan-200 hover:bg-blue-800/60"
+                            className="shrink-0 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white border-0 shadow-md"
                             asChild
                           >
                             <a href={spktApi.getFileUrl(file)} target="_blank" rel="noopener noreferrer">
-                              <Eye className="w-3 h-3 mr-1" />
+                              <Eye className="w-3 h-3 mr-1 text-sky-100" />
                               Review
                             </a>
                           </Button>
