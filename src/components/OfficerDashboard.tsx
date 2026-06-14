@@ -350,23 +350,23 @@ export const OfficerDashboard: React.FC = () => {
 
                 {/* Assignment Info */}
                 {selectedReport.assignedTo && (
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-indigo-900 mb-2">Info Penugasan</h3>
+                  <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4">
+                    <h3 className="font-semibold text-white mb-2">Info Penugasan</h3>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-indigo-600">Ditugaskan ke:</span>
-                        <p className="font-medium text-indigo-900">{selectedReport.assignedTo}</p>
+                        <span className="text-indigo-300">Ditugaskan ke:</span>
+                        <p className="font-medium text-white">{selectedReport.assignedTo}</p>
                       </div>
                       {selectedReport.assignedBy && (
                         <div>
-                          <span className="text-indigo-600">Oleh:</span>
-                          <p className="font-medium text-indigo-900">{selectedReport.assignedBy}</p>
+                          <span className="text-indigo-300">Oleh:</span>
+                          <p className="font-medium text-white">{selectedReport.assignedBy}</p>
                         </div>
                       )}
                       {selectedReport.assignedAt && (
                         <div>
-                          <span className="text-indigo-600">Pada:</span>
-                          <p className="font-medium text-indigo-900">
+                          <span className="text-indigo-300">Pada:</span>
+                          <p className="font-medium text-white">
                             {new Date(selectedReport.assignedAt).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'short',
@@ -378,12 +378,12 @@ export const OfficerDashboard: React.FC = () => {
                       )}
                       {selectedReport.priority && (
                         <div>
-                          <span className="text-indigo-600">Prioritas:</span>
+                          <span className="text-indigo-300">Prioritas:</span>
                           <p className={`font-medium ${
-                            selectedReport.priority === 'urgent' ? 'text-red-600' :
-                            selectedReport.priority === 'high' ? 'text-orange-600' :
-                            selectedReport.priority === 'medium' ? 'text-yellow-600' :
-                            'text-green-600'
+                            selectedReport.priority === 'urgent' ? 'text-red-400' :
+                            selectedReport.priority === 'high' ? 'text-orange-400' :
+                            selectedReport.priority === 'medium' ? 'text-amber-300' :
+                            'text-emerald-400'
                           }`}>
                             {selectedReport.priority.toUpperCase()}
                           </p>
@@ -394,15 +394,15 @@ export const OfficerDashboard: React.FC = () => {
                 )}
 
                 {/* Actions */}
-                <div className="border-t pt-6">
+                <div className="border-t border-blue-600/50 pt-6">
                   <h3 className="font-semibold text-white mb-4">Tindakan</h3>
 
                   {/* Step 0: Verify submitted report */}
                   {selectedReport.status === 'submitted' && !selectedReport.assignedTo && (
                     <div className="space-y-4 mb-4">
-                      <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
-                        <p className="text-sm text-cyan-900 mb-3">
-                          <strong>Langkah 1:</strong> Verifikasi kelengkapan laporan sebelum ditugaskan.
+                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                        <p className="text-sm text-cyan-100 mb-3">
+                          <strong className="text-cyan-200">Langkah 1:</strong> Verifikasi kelengkapan laporan sebelum ditugaskan.
                         </p>
                         <Button
                           onClick={handleVerify}
@@ -419,9 +419,9 @@ export const OfficerDashboard: React.FC = () => {
                   {!selectedReport.assignedTo &&
                     (selectedReport.status === 'submitted' || selectedReport.status === 'verified') && (
                     <div className="space-y-4">
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500/50 rounded-xl p-4 shadow-sm">
-                        <p className="text-sm text-blue-800 mb-3">
-                          <strong>Langkah 2:</strong> Ambil laporan ini untuk memproses.
+                      <div className="bg-blue-800/50 border border-blue-500/40 rounded-xl p-4">
+                        <p className="text-sm text-blue-100 mb-3">
+                          <strong className="text-sky-200">Langkah 2:</strong> Ambil laporan ini untuk memproses.
                         </p>
                         <Button
                           onClick={handleAssignToMe}
@@ -438,18 +438,19 @@ export const OfficerDashboard: React.FC = () => {
                   {selectedReport.assignedTo === officerName &&
                    (selectedReport.status === 'assigned' || selectedReport.status === 'verified') && (
                     <div className="space-y-4">
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p className="text-sm text-yellow-800 mb-3">
-                          <strong>Langkah 3:</strong> Mulai memproses laporan ini.
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                        <p className="text-sm text-amber-100 mb-3">
+                          <strong className="text-amber-200">Langkah 3:</strong> Mulai memproses laporan ini.
                         </p>
                         <div className="space-y-2 mb-3">
-                          <Label htmlFor="note">Catatan Awal</Label>
+                          <Label htmlFor="note" className="text-blue-200">Catatan Awal</Label>
                           <Textarea
                             id="note"
                             value={actionNote}
                             onChange={(e) => setActionNote(e.target.value)}
                             placeholder="Tambahkan catatan tindak lanjut..."
                             rows={3}
+                            className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
                           />
                         </div>
                         <Button
@@ -466,16 +467,16 @@ export const OfficerDashboard: React.FC = () => {
                   {/* Step 3: Update Status (if processing) */}
                   {selectedReport.assignedTo === officerName && selectedReport.status === 'processing' && (
                     <div className="space-y-4">
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-                        <p className="text-sm text-purple-800">
-                          <strong>Langkah 4:</strong> Update status laporan
+                      <div className="bg-violet-500/10 border border-violet-500/30 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-violet-100">
+                          <strong className="text-violet-200">Langkah 4:</strong> Update status laporan
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="status">Status Baru</Label>
+                        <Label htmlFor="status" className="text-blue-200">Status Baru</Label>
                         <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReportStatus)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-blue-900/50 border-blue-500/50 text-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -487,13 +488,14 @@ export const OfficerDashboard: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="note">Catatan</Label>
+                        <Label htmlFor="note" className="text-blue-200">Catatan</Label>
                         <Textarea
                           id="note"
                           value={actionNote}
                           onChange={(e) => setActionNote(e.target.value)}
                           placeholder="Tambahkan catatan tindak lanjut..."
                           rows={3}
+                          className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
                         />
                       </div>
 
@@ -509,9 +511,9 @@ export const OfficerDashboard: React.FC = () => {
 
                   {/* If already completed */}
                   {selectedReport.status === 'completed' && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-green-800">
-                        <CheckCircle2 className="w-5 h-5" />
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-emerald-200">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                         <p className="text-sm font-medium">
                           Laporan ini sudah selesai diproses
                         </p>
