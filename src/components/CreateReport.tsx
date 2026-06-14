@@ -10,7 +10,6 @@ import { FileUploadZone } from './FileUploadZone';
 import { useAuth } from '@/contexts/AuthContext';
 import { caseTypes } from '@/lib/data/mockData';
 import { spktApi } from '@/lib/spktApi';
-import { SatisfactionForm } from './SatisfactionForm';
 import { CheckCircle2, MapPin, FileText } from 'lucide-react';
 import { DatePickerField } from '@/components/DatePickerField';
 import { toast } from 'sonner';
@@ -35,7 +34,6 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
   });
   const [submitted, setSubmitted] = useState(false);
   const [reportNumber, setReportNumber] = useState('');
-  const [showSatisfaction, setShowSatisfaction] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -98,7 +96,6 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
 
       setReportNumber(report.reportNumber);
       setSubmitted(true);
-      setShowSatisfaction(true);
       toast.success('Laporan berhasil dikirim!', {
         description: 'Tim kami akan segera memproses laporan Anda',
       });
@@ -155,9 +152,8 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
 
   if (submitted) {
     return (
-      <>
-        <div className="w-full">
-          <Card className="border-green-500/50 bg-gradient-to-br from-green-900/80 to-green-800/80 shadow-lg backdrop-blur">
+      <div className="w-full">
+        <Card className="border-green-500/50 bg-gradient-to-br from-green-900/80 to-green-800/80 shadow-lg backdrop-blur">
             <CardContent className="p-8 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
                 <CheckCircle2 className="w-10 h-10 text-emerald-100" />
@@ -186,15 +182,6 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
             </CardContent>
           </Card>
         </div>
-
-        <SatisfactionForm
-          open={showSatisfaction}
-          onOpenChange={setShowSatisfaction}
-          serviceType="report"
-          serviceLabel="Buat Laporan"
-          referenceId={reportNumber}
-        />
-      </>
     );
   }
 

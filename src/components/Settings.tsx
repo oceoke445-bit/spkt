@@ -30,7 +30,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { spktApi } from '@/lib/spktApi';
+import { spktApi, type UserPreferences } from '@/lib/spktApi';
 
 const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
 const itemClass = 'flex items-center justify-between p-4 border border-blue-500/30 rounded-lg bg-blue-950/30';
@@ -40,15 +40,16 @@ const tabTriggerClass =
 
 export const Settings: React.FC = () => {
   const { user, refreshUser } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [notifications, setNotifications] = useState({
+  const [notifications, setNotifications] = useState<UserPreferences>({
     email: true,
     push: true,
     sms: false,
     reportUpdate: true,
     letterReady: true,
-    systemNews: false
+    systemNews: false,
+    darkMode: true,
   });
 
   const [profileData, setProfileData] = useState({
@@ -72,6 +73,12 @@ export const Settings: React.FC = () => {
         address: profile.address || '',
         avatarUrl: profile.avatarUrl || '',
       });
+    }).catch(() => {});
+
+    spktApi.getPreferences().then(({ preferences }) => {
+      setNotifications(preferences);
+      setIsDarkMode(preferences.darkMode);
+      document.documentElement.classList.toggle('spkt-light', !preferences.darkMode);
     }).catch(() => {});
   }, []);
 
@@ -146,9 +153,19 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const handleNotificationChange = (key: string, value: boolean) => {
-    setNotifications(prev => ({ ...prev, [key]: value }));
-    toast.success('Pengaturan notifikasi diperbarui');
+  const handleNotificationChange = async (key: keyof UserPreferences, value: boolean) => {
+    const updated = { ...notifications, [key]: value };
+    setNotifications(updated);
+    if (key === 'darkMode') {
+      setIsDarkMode(value);
+      document.documentElement.classList.toggle('spkt-light', !value);
+    }
+    try {
+      await spktApi.updatePreferences({ [key]: value });
+      toast.success('Pengaturan disimpan');
+    } catch {
+      toast.error('Gagal menyimpan pengaturan');
+    }
   };
 
   const getInitials = (name: string) => {
@@ -245,12 +262,14 @@ export const Settings: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-blue-200" htmlFor="email">Email</Label>
-                  <Input className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
+                  <Input className="bg-blue-900/50 border-blue-500/50 text-blue-300 placeholder:text-blue-400"
                     id="email"
                     type="email"
                     value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    readOnly
+                    disabled
                   />
+                  <p className="text-xs text-blue-400">Email tidak dapat diubah. Hubungi admin jika perlu koreksi.</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-blue-200" htmlFor="phone">Nomor Telepon</Label>
@@ -263,10 +282,11 @@ export const Settings: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-blue-200" htmlFor="nik">NIK</Label>
-                  <Input className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
+                  <Input className="bg-blue-900/50 border-blue-500/50 text-blue-300 placeholder:text-blue-400"
                     id="nik"
                     value={profileData.nik}
-                    onChange={(e) => setProfileData({ ...profileData, nik: e.target.value })}
+                    readOnly
+                    disabled
                     maxLength={16}
                   />
                 </div>
@@ -395,74 +415,15 @@ export const Settings: React.FC = () => {
 
           <Card className={cardClass}>
             <CardHeader>
-              <CardTitle className="text-white">Autentikasi Dua Faktor</CardTitle>
-              <CardDescription className="text-blue-200">Tambahkan lapisan keamanan ekstra</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className={`${itemClass} items-start`}>
-                <div className="flex items-start gap-3">
-                  <Smartphone className="w-5 h-5 text-blue-200 mt-1" />
-                  <div>
-                    <h4 className="font-medium text-white">SMS Verification</h4>
-                    <p className="text-sm text-blue-200 mt-1">
-                      Terima kode verifikasi via SMS
-                    </p>
-                  </div>
-                </div>
-                <Switch />
-              </div>
-
-              <div className={`${itemClass} items-start`}>
-                <div className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 text-blue-200 mt-1" />
-                  <div>
-                    <h4 className="font-medium text-white">Email Verification</h4>
-                    <p className="text-sm text-blue-200 mt-1">
-                      Terima kode verifikasi via email
-                    </p>
-                  </div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={cardClass}>
-            <CardHeader>
-              <CardTitle className="text-white">Riwayat Login</CardTitle>
-              <CardDescription className="text-blue-200">Aktivitas login terbaru</CardDescription>
+              <CardTitle className="text-white">Keamanan Akun</CardTitle>
+              <CardDescription className="text-blue-200">
+                Autentikasi dua faktor dan riwayat login akan tersedia pada rilis berikutnya.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { device: 'Chrome on Windows', location: 'Jakarta', time: '2 jam yang lalu', current: true },
-                  { device: 'Mobile App', location: 'Jakarta', time: '1 hari yang lalu', current: false },
-                  { device: 'Firefox on MacOS', location: 'Bandung', time: '3 hari yang lalu', current: false }
-                ].map((login, index) => (
-                  <div key={index} className={`${itemClass} p-3`}>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm text-white">{login.device}</p>
-                        {login.current && (
-                          <Badge className="text-xs bg-blue-500/30 text-blue-100 border border-blue-400/50">Saat ini</Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-blue-300 mt-1">
-                        {login.location} • {login.time}
-                      </p>
-                    </div>
-                    {!login.current && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="bg-rose-900/40 text-rose-300 hover:text-white hover:bg-rose-800/60 border border-rose-500/40"
-                      >
-                        Logout
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-blue-200">
+                Saat ini Anda dapat mengubah password melalui formulir di atas. Pastikan password kuat dan unik.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -579,10 +540,7 @@ export const Settings: React.FC = () => {
                 </div>
                 <Switch
                   checked={isDarkMode}
-                  onCheckedChange={(checked) => {
-                    setIsDarkMode(checked);
-                    toast.success(checked ? 'Mode gelap diaktifkan' : 'Mode terang diaktifkan');
-                  }}
+                  onCheckedChange={(checked) => handleNotificationChange('darkMode', checked)}
                 />
               </div>
 

@@ -26,7 +26,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ currentView, onMenuO
           <Menu className="w-5 h-5" />
         </Button>
         <div className="min-w-0 flex-1">
-          <SpktLogo className="max-h-8 w-auto max-w-[96px]" />
+          <SpktLogo className="max-h-8 w-auto max-w-[96px]" showText={false} />
           <p className="text-xs text-blue-300 truncate">{getViewLabel(currentView)}</p>
         </div>
       </div>

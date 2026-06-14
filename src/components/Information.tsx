@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -18,63 +18,12 @@ import {
   MessageSquare,
   ExternalLink
 } from 'lucide-react';
+import { spktApi, type InfoArticle } from '@/lib/spktApi';
 
 const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
 const tabsListClass = 'grid w-full grid-cols-1 sm:grid-cols-3 h-auto gap-1 bg-blue-950/60 border border-blue-500/40 p-1';
 const tabTriggerClass =
   'text-blue-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md [&_svg]:text-blue-300 data-[state=active]:[&_svg]:text-sky-200';
-
-interface InfoArticle {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  date: string;
-  content: string;
-}
-
-const infoArticles: InfoArticle[] = [
-  {
-    id: '1',
-    title: 'Cara Membuat Laporan Polisi Online',
-    category: 'Panduan',
-    description: 'Panduan lengkap membuat laporan polisi melalui sistem SPKT Digital',
-    date: '2026-05-15',
-    content: 'Ikuti langkah-langkah berikut untuk membuat laporan...'
-  },
-  {
-    id: '2',
-    title: 'Persyaratan Pembuatan SKCK',
-    category: 'Layanan',
-    description: 'Dokumen dan persyaratan yang diperlukan untuk mengajukan SKCK',
-    date: '2026-05-10',
-    content: 'Untuk membuat SKCK, Anda memerlukan dokumen berikut...'
-  },
-  {
-    id: '3',
-    title: 'Tips Keamanan Berkendara',
-    category: 'Edukasi',
-    description: 'Tips dan trik berkendara aman di jalan raya',
-    date: '2026-05-08',
-    content: 'Selalu patuhi rambu lalu lintas dan gunakan helm...'
-  },
-  {
-    id: '4',
-    title: 'Waspadai Modus Penipuan Online',
-    category: 'Peringatan',
-    description: 'Kenali dan hindari berbagai modus penipuan online terbaru',
-    date: '2026-05-05',
-    content: 'Beberapa modus penipuan yang perlu diwaspadai...'
-  },
-  {
-    id: '5',
-    title: 'Prosedur Kehilangan KTP dan SIM',
-    category: 'Panduan',
-    description: 'Langkah-langkah yang harus dilakukan saat kehilangan dokumen penting',
-    date: '2026-05-01',
-    content: 'Segera laporkan kehilangan ke kantor polisi terdekat...'
-  }
-];
 
 const contacts = [
   {
@@ -138,6 +87,16 @@ export const Information: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [infoArticles, setInfoArticles] = useState<InfoArticle[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+
+  useEffect(() => {
+    spktApi
+      .getInfoArticles()
+      .then(({ articles }) => setInfoArticles(articles))
+      .catch(() => setInfoArticles([]))
+      .finally(() => setArticlesLoading(false));
+  }, []);
 
   const categories = ['all', 'Panduan', 'Layanan', 'Edukasi', 'Peringatan'];
 

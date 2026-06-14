@@ -118,6 +118,25 @@ export interface NotificationItem {
   createdAt: string;
 }
 
+export interface UserPreferences {
+  email: boolean;
+  push: boolean;
+  sms: boolean;
+  reportUpdate: boolean;
+  letterReady: boolean;
+  systemNews: boolean;
+  darkMode: boolean;
+}
+
+export interface InfoArticle {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  content: string;
+  date: string;
+}
+
 export interface CreateComplaintPayload {
   submitterUserId?: string;
   submitterName: string;
@@ -314,4 +333,26 @@ export const spktApi = {
   },
 
   getFileUrl: (storedName: string) => `/api/files/${encodeURIComponent(storedName)}`,
+
+  getPreferences: () => request<{ preferences: UserPreferences }>('/users/me/preferences'),
+
+  updatePreferences: (payload: Partial<UserPreferences>) =>
+    request<{ preferences: UserPreferences }>('/users/me/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  getInfoArticles: () => request<{ articles: InfoArticle[] }>('/info/articles'),
+
+  suspendUserByNik: async (nik: string) => {
+    const { users } = await request<{ users: Array<{ id: string; nik?: string }> }>('/users');
+    const target = users.find((u) => u.nik === nik);
+    if (!target) {
+      throw new Error('Akun pelapor tidak ditemukan');
+    }
+    return request<{ message: string }>(`/users/${target.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active: false }),
+    });
+  },
 };

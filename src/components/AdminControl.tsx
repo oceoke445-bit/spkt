@@ -102,10 +102,15 @@ export const AdminControl: React.FC = () => {
     }
   };
 
-  const handleSuspendUser = (reportId: string) => {
-    toast.warning('User suspended', {
-      description: 'Akun pelapor telah ditangguhkan sementara',
-    });
+  const handleSuspendUser = async (report: Report) => {
+    try {
+      await spktApi.suspendUserByNik(report.reporterNIK);
+      toast.warning('User dinonaktifkan', {
+        description: `Akun pelapor ${report.reporterName} telah ditangguhkan`,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menonaktifkan user');
+    }
   };
 
   return (
@@ -259,7 +264,7 @@ export const AdminControl: React.FC = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleSuspendUser(report.id)}
+                    onClick={() => handleSuspendUser(report)}
                     className="border border-rose-500/50 bg-rose-900/30 text-rose-300 hover:bg-rose-900/50 hover:text-rose-100 hover:border-rose-400/60 shadow-sm"
                   >
                     <Ban className="w-3 h-3 mr-1 text-rose-300" />

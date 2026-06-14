@@ -241,8 +241,85 @@ function migrateSchema() {
   if (!columnExists('letter_requests', 'rejection_reason')) {
     db.exec('ALTER TABLE letter_requests ADD COLUMN rejection_reason TEXT');
   }
+  if (!columnExists('users', 'preferences_json')) {
+    db.exec("ALTER TABLE users ADD COLUMN preferences_json TEXT NOT NULL DEFAULT '{}'");
+  }
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS info_articles (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      category TEXT NOT NULL,
+      description TEXT NOT NULL,
+      content TEXT NOT NULL,
+      published_at TEXT NOT NULL
+    );
+  `);
+
+  seedInfoArticles();
   migratePlainPasswords();
+}
+
+function seedInfoArticles() {
+  const count = (db.prepare('SELECT COUNT(*) as c FROM info_articles').get() as { c: number }).c;
+  if (count > 0) return;
+
+  const insert = db.prepare(
+    `INSERT INTO info_articles (id, title, category, description, content, published_at)
+     VALUES (@id, @title, @category, @description, @content, @publishedAt)`,
+  );
+
+  const articles = [
+    {
+      id: '1',
+      title: 'Cara Membuat Laporan Polisi Online',
+      category: 'Panduan',
+      description: 'Panduan lengkap membuat laporan polisi melalui sistem SPKT Digital',
+      content:
+        'Login ke akun SPKT Digital, pilih menu Buat Laporan, isi data pelapor dan detail kejadian, unggah bukti jika ada, lalu kirim. Simpan nomor laporan untuk pelacakan status.',
+      publishedAt: '2026-05-15',
+    },
+    {
+      id: '2',
+      title: 'Persyaratan Pembuatan SKCK',
+      category: 'Layanan',
+      description: 'Dokumen dan persyaratan yang diperlukan untuk mengajukan SKCK',
+      content:
+        'Siapkan KTP asli, foto terbaru, dan formulir permohonan. Ajukan melalui menu Layanan Surat, pilih SKCK, isi tujuan permohonan, lalu tunggu verifikasi petugas.',
+      publishedAt: '2026-05-10',
+    },
+    {
+      id: '3',
+      title: 'Tips Keamanan Berkendara',
+      category: 'Edukasi',
+      description: 'Tips dan trik berkendara aman di jalan raya',
+      content:
+        'Patuhi rambu lalu lintas, gunakan helm/SABUK pengaman, hindari penggunaan ponsel saat berkendara, dan periksa kondisi kendaraan sebelum berangkat.',
+      publishedAt: '2026-05-08',
+    },
+    {
+      id: '4',
+      title: 'Waspadai Modus Penipuan Online',
+      category: 'Peringatan',
+      description: 'Kenali dan hindari berbagai modus penipuan online terbaru',
+      content:
+        'Jangan transfer uang ke nomor rekening tidak dikenal, verifikasi identitas penjual, waspadai tawaran investasi tidak masuk akal, dan laporkan penipuan ke SPKT Digital.',
+      publishedAt: '2026-05-05',
+    },
+    {
+      id: '5',
+      title: 'Prosedur Kehilangan KTP dan SIM',
+      category: 'Panduan',
+      description: 'Langkah-langkah yang harus dilakukan saat kehilangan dokumen penting',
+      content:
+        'Segera buat laporan kehilangan melalui SPKT Digital, bawa surat keterangan ke Dukcapil/Dispendik untuk penggantian dokumen, dan simpan nomor laporan sebagai bukti.',
+      publishedAt: '2026-05-01',
+    },
+  ];
+
+  for (const article of articles) {
+    insert.run(article);
+  }
 }
 
 function migratePlainPasswords() {

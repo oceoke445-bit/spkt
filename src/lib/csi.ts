@@ -36,6 +36,17 @@ export function getDimensions(): DimensionRow[] {
     .all() as unknown as DimensionRow[];
 }
 
+export function hasSurvey(userId: string, serviceType: string, referenceId: string): boolean {
+  ensureDbReady();
+  const row = db
+    .prepare(
+      `SELECT id FROM satisfaction_surveys
+       WHERE user_id = ? AND reference_id = ? AND service_type = ?`,
+    )
+    .get(userId, referenceId, serviceType) as { id: number } | undefined;
+  return Boolean(row);
+}
+
 export function submitSurvey(payload: SubmitSurveyPayload) {
   ensureDbReady();
   const dimensions = getDimensions();

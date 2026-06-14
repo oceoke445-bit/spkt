@@ -18,12 +18,23 @@ export const OfficerDashboard: React.FC = () => {
   const { reports: incomingReports, loading, refresh } = useReports();
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [actionNote, setActionNote] = useState('');
-  const [newStatus, setNewStatus] = useState<ReportStatus>('verified');
+  const [newStatus, setNewStatus] = useState<ReportStatus>('completed');
 
-  const myReports = incomingReports.filter(r => r.assignedTo === user?.name);
+  const officerName = user?.name ?? '';
+  const myReports = incomingReports.filter((r) => r.assignedTo === officerName);
 
-  const unassignedReports = incomingReports.filter(r => r.status === 'submitted' || r.status === 'verified' && !r.assignedTo);
-  const assignedToMe = myReports.filter(r => r.status !== 'completed' && r.status !== 'rejected');
+  const unassignedReports = incomingReports.filter(
+    (r) => (r.status === 'submitted' || r.status === 'verified') && !r.assignedTo,
+  );
+  const assignedToMe = myReports.filter((r) => r.status !== 'completed' && r.status !== 'rejected');
+
+  const actionableReports = incomingReports.filter(
+    (r) =>
+      r.status !== 'draft' &&
+      r.status !== 'completed' &&
+      r.status !== 'rejected' &&
+      (!r.assignedTo || r.assignedTo === officerName),
+  );
 
   const stats = [
     {
@@ -69,6 +80,26 @@ export const OfficerDashboard: React.FC = () => {
       setActionNote('');
     } catch (err) {
       toast.error('Gagal memperbarui status', {
+        description: err instanceof Error ? err.message : 'Terjadi kesalahan',
+      });
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!selectedReport) return;
+
+    try {
+      await spktApi.updateReport(selectedReport.id, {
+        status: 'verified',
+        timelineNote: actionNote || undefined,
+        timelineOfficer: user?.name,
+      });
+      await refresh();
+      toast.success('Laporan diverifikasi');
+      setSelectedReport(null);
+      setActionNote('');
+    } catch (err) {
+      toast.error('Gagal memverifikasi laporan', {
         description: err instanceof Error ? err.message : 'Terjadi kesalahan',
       });
     }
@@ -159,7 +190,10 @@ export const OfficerDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {incomingReports.map((report) => (
+            {actionableReports.length === 0 ? (
+              <p className="text-center py-8 text-blue-300">Tidak ada laporan yang perlu ditindaklanjuti</p>
+            ) : (
+            actionableReports.map((report) => (
               <div
                 key={report.id}
                 className="border border-blue-600/50 rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur cursor-pointer"
@@ -207,7 +241,8 @@ export const OfficerDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
-            ))}
+            ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -355,12 +390,31 @@ export const OfficerDashboard: React.FC = () => {
                 <div className="border-t pt-6">
                   <h3 className="font-semibold text-white mb-4">Tindakan</h3>
 
+                  {/* Step 0: Verify submitted report */}
+                  {selectedReport.status === 'submitted' && !selectedReport.assignedTo && (
+                    <div className="space-y-4 mb-4">
+                      <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                        <p className="text-sm text-cyan-900 mb-3">
+                          <strong>Langkah 1:</strong> Verifikasi kelengkapan laporan sebelum ditugaskan.
+                        </p>
+                        <Button
+                          onClick={handleVerify}
+                          className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-md"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-2" />
+                          Verifikasi Laporan
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Step 1: Assign (if not assigned) */}
-                  {!selectedReport.assignedTo && selectedReport.status === 'submitted' && (
+                  {!selectedReport.assignedTo &&
+                    (selectedReport.status === 'submitted' || selectedReport.status === 'verified') && (
                     <div className="space-y-4">
                       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500/50 rounded-xl p-4 shadow-sm">
                         <p className="text-sm text-blue-800 mb-3">
-                          ✅ <strong>Langkah 1:</strong> Laporan belum ditugaskan. Ambil laporan ini untuk memproses.
+                          <strong>Langkah 2:</strong> Ambil laporan ini untuk memproses.
                         </p>
                         <Button
                           onClick={handleAssignToMe}
@@ -373,13 +427,13 @@ export const OfficerDashboard: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Step 2: Start Processing (if assigned but not processing) */}
-                  {selectedReport.assignedTo === 'Ipda. Ahmad Wijaya' &&
+                  {/* Step 2: Start Processing (if assigned to me) */}
+                  {selectedReport.assignedTo === officerName &&
                    (selectedReport.status === 'assigned' || selectedReport.status === 'verified') && (
                     <div className="space-y-4">
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                         <p className="text-sm text-yellow-800 mb-3">
-                          ✅ <strong>Langkah 2:</strong> Mulai memproses laporan ini.
+                          <strong>Langkah 3:</strong> Mulai memproses laporan ini.
                         </p>
                         <div className="space-y-2 mb-3">
                           <Label htmlFor="note">Catatan Awal</Label>
@@ -403,11 +457,11 @@ export const OfficerDashboard: React.FC = () => {
                   )}
 
                   {/* Step 3: Update Status (if processing) */}
-                  {selectedReport.assignedTo === 'Ipda. Ahmad Wijaya' && selectedReport.status === 'processing' && (
+                  {selectedReport.assignedTo === officerName && selectedReport.status === 'processing' && (
                     <div className="space-y-4">
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
                         <p className="text-sm text-purple-800">
-                          ✅ <strong>Langkah 3:</strong> Update status laporan
+                          <strong>Langkah 4:</strong> Update status laporan
                         </p>
                       </div>
 

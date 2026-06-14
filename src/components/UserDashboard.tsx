@@ -45,34 +45,38 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
   const { reports: userReports, loading: reportsLoading } = useReports({ nik: user?.nik });
   const { letters: userLetters } = useLetters(user?.nik);
 
+  const processingCount = userReports.filter(r => r.status === 'processing' || r.status === 'verified' || r.status === 'assigned').length;
+  const completedCount = userReports.filter(r => r.status === 'completed').length;
+  const readyLetters = userLetters.filter(l => l.status === 'ready').length;
+
   const stats = [
     {
       title: 'Total Laporan',
       value: userReports.length,
       icon: <FileText className="w-6 h-6 text-sky-300" />,
       iconBg: 'bg-sky-500/20',
-      change: '+2 bulan ini'
+      change: `${userReports.length} total`
     },
     {
       title: 'Sedang Diproses',
-      value: userReports.filter(r => r.status === 'processing' || r.status === 'verified').length,
+      value: processingCount,
       icon: <Clock className="w-6 h-6 text-amber-300" />,
       iconBg: 'bg-amber-500/20',
-      change: 'Dalam proses'
+      change: processingCount > 0 ? 'Dalam proses' : 'Tidak ada'
     },
     {
       title: 'Selesai',
-      value: userReports.filter(r => r.status === 'completed').length,
+      value: completedCount,
       icon: <CheckCircle2 className="w-6 h-6 text-emerald-300" />,
       iconBg: 'bg-emerald-500/20',
-      change: '1 minggu terakhir'
+      change: `${completedCount} laporan selesai`
     },
     {
       title: 'Layanan Surat',
       value: userLetters.length,
       icon: <Mail className="w-6 h-6 text-violet-300" />,
       iconBg: 'bg-violet-500/20',
-      change: userLetters.filter(l => l.status === 'ready').length + ' siap diambil'
+      change: `${readyLetters} siap diambil`
     }
   ];
 

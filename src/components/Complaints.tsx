@@ -23,7 +23,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { SatisfactionForm } from './SatisfactionForm';
+import { CsiPromptButton } from './CsiPromptButton';
+import { useCsiEligibility } from '@/hooks/useCsiEligibility';
 import { FileUploadZone } from './FileUploadZone';
 import {
   Complaint,
@@ -45,8 +46,6 @@ export const Complaints: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSatisfaction, setShowSatisfaction] = useState(false);
-  const [lastReference, setLastReference] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [adminStatus, setAdminStatus] = useState<ComplaintStatus>('submitted');
   const [adminResponse, setAdminResponse] = useState('');
@@ -64,6 +63,14 @@ export const Complaints: React.FC = () => {
       setAdminResponse(selectedComplaint.response ?? '');
     }
   }, [selectedComplaint]);
+
+  const complaintCsiDone =
+    !isStaff &&
+    selectedComplaint != null &&
+    (selectedComplaint.status === 'resolved' || selectedComplaint.status === 'closed');
+
+  const { eligible: complaintCsiEligible, checking: complaintCsiChecking, refresh: refreshComplaintCsi } =
+    useCsiEligibility('complaint', selectedComplaint?.complaintNumber, complaintCsiDone);
 
   const filteredComplaints = userComplaints.filter(complaint =>
     complaint.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,13 +99,11 @@ export const Complaints: React.FC = () => {
         files: uploadedFiles,
       });
 
-      setLastReference(complaint.complaintNumber);
       await refresh();
       toast.success('Pengaduan berhasil dikirim!', {
         description: 'Tim kami akan segera menindaklanjuti pengaduan Anda',
       });
       setShowForm(false);
-      setShowSatisfaction(true);
       setFormData({ category: '', subject: '', description: '', files: [] });
     } catch (err) {
       toast.error('Gagal mengirim pengaduan', {
@@ -510,20 +515,23 @@ export const Complaints: React.FC = () => {
                     </AlertDescription>
                   </Alert>
                 )}
+
+                {!isStaff && complaintCsiDone && (
+                  <CsiPromptButton
+                    serviceType="complaint"
+                    serviceLabel="Pengaduan"
+                    referenceId={selectedComplaint.complaintNumber}
+                    eligible={complaintCsiEligible}
+                    checking={complaintCsiChecking}
+                    onSubmitted={refreshComplaintCsi}
+                  />
+                )}
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
     </div>
-
-    <SatisfactionForm
-      open={showSatisfaction}
-      onOpenChange={setShowSatisfaction}
-      serviceType="complaint"
-      serviceLabel="Pengaduan"
-      referenceId={lastReference}
-    />
     </>
   );
 };

@@ -11,7 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { letterTypes, getStatusBadgeColor, getStatusLabel } from '@/lib/data/mockData';
 import { spktApi } from '@/lib/spktApi';
 import { useLetters } from '@/hooks/useLetters';
-import { SatisfactionForm } from './SatisfactionForm';
+import { CsiPromptButton } from './CsiPromptButton';
+import { useCsiEligibility } from '@/hooks/useCsiEligibility';
 import { FileUploadZone } from './FileUploadZone';
 import { DatePickerField } from '@/components/DatePickerField';
 import { Mail, FileText, CheckCircle2, ArrowLeft, User, Save, ExternalLink } from 'lucide-react';
@@ -36,8 +37,7 @@ export const LetterService: React.FC = () => {
 
   const [selectedLetter, setSelectedLetter] = useState<LetterType | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [showSatisfaction, setShowSatisfaction] = useState(false);
-  const [lastReference, setLastReference] = useState('');
+  const [viewingLetter, setViewingLetter] = useState<LetterRequest | null>(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     nik: user?.nik || '',
@@ -54,6 +54,13 @@ export const LetterService: React.FC = () => {
   const [staffPickupDate, setStaffPickupDate] = useState('');
   const [staffRejectionReason, setStaffRejectionReason] = useState('');
   const [staffSaving, setStaffSaving] = useState(false);
+
+  const { eligible: letterCsiEligible, checking: letterCsiChecking, refresh: refreshLetterCsi } =
+    useCsiEligibility(
+      'letter',
+      viewingLetter?.requestNumber,
+      !isStaff && (viewingLetter?.status === 'ready' || viewingLetter?.status === 'completed'),
+    );
 
   useEffect(() => {
     if (managingLetter) {
@@ -92,7 +99,6 @@ export const LetterService: React.FC = () => {
         attachmentFiles,
       });
 
-      setLastReference(letter.requestNumber);
       await refreshLetters();
       toast.success('Pengajuan berhasil!', {
         description: 'Pengajuan surat Anda sedang diproses',
@@ -100,7 +106,6 @@ export const LetterService: React.FC = () => {
       setShowForm(false);
       setSelectedLetter(null);
       setFormData((prev) => ({ ...prev, purpose: '', pickupDate: '', documents: [] }));
-      setShowSatisfaction(true);
     } catch (err) {
       toast.error('Gagal mengajukan surat', {
         description: err instanceof Error ? err.message : 'Terjadi kesalahan',
@@ -235,7 +240,8 @@ export const LetterService: React.FC = () => {
                   {userLetters.map((letter) => (
                     <div
                       key={letter.id}
-                      className="border border-blue-600/50 rounded-xl p-4 hover:bg-blue-700/30 hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur"
+                      className="border border-blue-600/50 rounded-xl p-4 hover:bg-blue-700/30 hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur cursor-pointer"
+                      onClick={() => setViewingLetter(letter)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div>
@@ -420,13 +426,38 @@ export const LetterService: React.FC = () => {
       )}
     </div>
 
-    <SatisfactionForm
-      open={showSatisfaction}
-      onOpenChange={setShowSatisfaction}
-      serviceType="letter"
-      serviceLabel="Layanan Surat"
-      referenceId={lastReference}
-    />
+    {/* User letter detail */}
+    <Dialog open={!!viewingLetter} onOpenChange={() => setViewingLetter(null)}>
+      <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-lg">
+        {viewingLetter && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-white">{viewingLetter.requestNumber}</DialogTitle>
+              <DialogDescription className="text-blue-200">{viewingLetter.letterType}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm text-blue-100">
+              <p>Keperluan: {viewingLetter.purpose}</p>
+              <p>Status: {getStatusLabel(viewingLetter.status)}</p>
+              {viewingLetter.pickupDate && viewingLetter.status === 'ready' && (
+                <p className="text-green-200">
+                  Siap diambil: {new Date(viewingLetter.pickupDate).toLocaleDateString('id-ID')}
+                </p>
+              )}
+              {(viewingLetter.status === 'ready' || viewingLetter.status === 'completed') && (
+                <CsiPromptButton
+                  serviceType="letter"
+                  serviceLabel="Layanan Surat"
+                  referenceId={viewingLetter.requestNumber}
+                  eligible={letterCsiEligible}
+                  checking={letterCsiChecking}
+                  onSubmitted={refreshLetterCsi}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
 
     {/* Staff management dialog */}
     <Dialog open={!!managingLetter} onOpenChange={() => setManagingLetter(null)}>

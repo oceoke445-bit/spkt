@@ -9,6 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useReports } from '@/hooks/useReports';
 import { Search, FileText, Calendar, MapPin, User, Phone, CheckCircle2, Clock, AlertCircle, ExternalLink } from 'lucide-react';
 import { spktApi } from '@/lib/spktApi';
+import { CsiPromptButton } from './CsiPromptButton';
+import { useCsiEligibility } from '@/hooks/useCsiEligibility';
 
 interface MyReportsProps {
   onContinueDraft?: (reportId: string) => void;
@@ -20,6 +22,12 @@ export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  const { eligible: csiEligible, checking: csiChecking, refresh: refreshCsi } = useCsiEligibility(
+    'report',
+    selectedReport?.reportNumber,
+    selectedReport?.status === 'completed',
+  );
 
   const filteredReports = userReports.filter(report => {
     const matchesSearch =
@@ -327,6 +335,17 @@ export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
                       </div>
                     </div>
                   </div>
+                )}
+
+                {selectedReport.status === 'completed' && (
+                  <CsiPromptButton
+                    serviceType="report"
+                    serviceLabel="Buat Laporan"
+                    referenceId={selectedReport.reportNumber}
+                    eligible={csiEligible}
+                    checking={csiChecking}
+                    onSubmitted={refreshCsi}
+                  />
                 )}
               </div>
             </>

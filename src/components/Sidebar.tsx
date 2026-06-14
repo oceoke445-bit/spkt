@@ -14,7 +14,8 @@ import {
   Users,
   BarChart3,
   Inbox,
-  Star
+  Star,
+  Shield,
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { iconAccent } from './iconStyles';
@@ -37,9 +38,10 @@ const menuItems: MenuItem[] = [
   { icon: Mail, iconColor: iconAccent.violet.color, label: 'Layanan Surat', view: 'letter-service', roles: ['user', 'petugas', 'admin'] },
   { icon: MessageSquare, iconColor: iconAccent.emerald.color, label: 'Pengaduan', view: 'complaints', roles: ['user', 'petugas', 'admin'] },
   { icon: Users, iconColor: iconAccent.sky.color, label: 'User Management', view: 'user-management', roles: ['admin'] },
+  { icon: Shield, iconColor: iconAccent.indigo.color, label: 'Kelola Petugas', view: 'officer-management', roles: ['admin'] },
   { icon: BarChart3, iconColor: iconAccent.amber.color, label: 'Statistik', view: 'statistics', roles: ['admin'] },
   { icon: Star, iconColor: iconAccent.amber.color, label: 'Kepuasan (CSI)', view: 'csi-dashboard', roles: ['admin'] },
-  { icon: Info, iconColor: iconAccent.cyan.color, label: 'Informasi', view: 'information', roles: ['user'] },
+  { icon: Info, iconColor: iconAccent.cyan.color, label: 'Informasi', view: 'information', roles: ['user', 'petugas', 'admin'] },
   { icon: Settings, iconColor: iconAccent.blue.color, label: 'Pengaturan', view: 'settings', roles: ['user', 'petugas', 'admin'] },
 ];
 

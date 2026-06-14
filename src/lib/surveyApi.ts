@@ -88,6 +88,11 @@ export const surveyApi = {
 
   getRecentSurveys: (limit = 20) =>
     request<{ surveys: RecentSurvey[] }>(`/survey/recent?limit=${limit}`),
+
+  checkSurvey: (serviceType: string, referenceId: string) =>
+    request<{ submitted: boolean }>(
+      `/survey/check?serviceType=${encodeURIComponent(serviceType)}&referenceId=${encodeURIComponent(referenceId)}`,
+    ),
 };
 
 export const SCORE_LABELS: Record<number, string> = {

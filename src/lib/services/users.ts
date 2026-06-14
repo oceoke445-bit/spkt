@@ -201,11 +201,58 @@ export function listUsersDetailed(): Array<{
     id: row.id,
     name: row.name,
     email: row.email,
-    role: row.role === 'petugas' ? 'Petugas' : row.role === 'admin' ? 'Admin' : 'User',
+    role: row.role,
     active: row.active === 1,
     nik: row.nik ?? undefined,
     phone: row.phone ?? undefined,
   }));
+}
+
+export interface UserPreferences {
+  email: boolean;
+  push: boolean;
+  sms: boolean;
+  reportUpdate: boolean;
+  letterReady: boolean;
+  systemNews: boolean;
+  darkMode: boolean;
+}
+
+const DEFAULT_PREFERENCES: UserPreferences = {
+  email: true,
+  push: true,
+  sms: false,
+  reportUpdate: true,
+  letterReady: true,
+  systemNews: false,
+  darkMode: true,
+};
+
+export function getUserPreferences(userId: string): UserPreferences {
+  ensureDbReady();
+  const row = db.prepare('SELECT preferences_json FROM users WHERE id = ?').get(userId) as
+    | { preferences_json: string }
+    | undefined;
+  if (!row) return { ...DEFAULT_PREFERENCES };
+  try {
+    return { ...DEFAULT_PREFERENCES, ...JSON.parse(row.preferences_json) };
+  } catch {
+    return { ...DEFAULT_PREFERENCES };
+  }
+}
+
+export function updateUserPreferences(userId: string, input: Partial<UserPreferences>): UserPreferences {
+  ensureDbReady();
+  const current = getUserPreferences(userId);
+  const merged = { ...current, ...input };
+  db.prepare('UPDATE users SET preferences_json = ? WHERE id = ?').run(JSON.stringify(merged), userId);
+  return merged;
+}
+
+export function getUserIdByNik(nik: string): string | null {
+  ensureDbReady();
+  const row = db.prepare('SELECT id FROM users WHERE nik = ?').get(nik) as { id: string } | undefined;
+  return row?.id ?? null;
 }
 
 export function updateUserByAdmin(
