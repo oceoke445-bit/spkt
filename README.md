@@ -1,11 +1,62 @@
+# SPKT Digital
 
-  # Digital Police Service Website
+Sistem Pelayanan Kepolisian Terpadu — Next.js 15 + SQLite.
 
-  This is a code bundle for Digital Police Service Website. The original project is available at https://www.figma.com/design/JuZey2aRxSFhqZmPMe13Z1/Digital-Police-Service-Website.
+## Persyaratan
 
-  ## Running the code
+- Node.js **>= 22.5.0** (untuk `node:sqlite`)
+- npm
 
-  Run `npm i` to install the dependencies.
+## Setup Lokal
 
-  Run `npm run dev` to start the development server.
-  
+```bash
+npm install
+npm run dev
+```
+
+Buka http://localhost:3000
+
+Database dan seed data dibuat otomatis di `data/spkt.db` saat pertama kali API dipanggil.
+
+### Akun Demo
+
+| Role | Email | Password |
+|------|-------|----------|
+| Masyarakat | `user@spkt.id` | `spkt123` |
+| Petugas | `petugas@spkt.id` | `spkt123` |
+| Admin | `admin@spkt.id` | `spkt123` |
+
+### Environment (opsional)
+
+| Variable | Default | Keterangan |
+|----------|---------|------------|
+| `DATA_DIR` | `./data` | Folder data & SQLite |
+| `DATABASE_PATH` | `DATA_DIR/spkt.db` | Path database |
+| `UPLOAD_DIR` | `DATA_DIR/uploads` | File upload fisik |
+
+## Scripts
+
+| Command | Fungsi |
+|---------|--------|
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm run start` | Jalankan production |
+
+## Dokumentasi
+
+- [Flow & diagram](docs/FLOW.md)
+- [API contract](docs/API.md)
+
+## Struktur Penting
+
+```
+src/app/api/     REST API
+src/components/  UI React
+src/lib/db.ts    Schema SQLite + seed
+data/spkt.db     Database (auto-created)
+data/uploads/    File upload fisik
+```
+
+## Deploy
+
+Railway — healthcheck `/api/health`. Pastikan `DATA_DIR` persisten (volume) agar database dan upload tidak hilang saat redeploy.

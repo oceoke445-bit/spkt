@@ -72,8 +72,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
     onNavigate?.();
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     onNavigate?.();
   };
 

@@ -171,6 +171,24 @@ function initAppTables() {
     CREATE INDEX IF NOT EXISTS idx_reports_assigned ON reports(assigned_to);
     CREATE INDEX IF NOT EXISTS idx_letters_nik ON letter_requests(requester_nik);
     CREATE INDEX IF NOT EXISTS idx_complaints_nik ON complaints(submitter_nik);
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+
+    CREATE TABLE IF NOT EXISTS reference_counters (
+      prefix TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      last_value INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (prefix, year)
+    );
   `);
 }
 

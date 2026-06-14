@@ -45,6 +45,12 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
     setSubmitting(true);
 
     try {
+      let evidenceFiles: string[] = [];
+      if (formData.files.length > 0) {
+        const { files: uploaded } = await spktApi.uploadFiles(formData.files);
+        evidenceFiles = uploaded.map((f) => f.storedName);
+      }
+
       const { report } = await spktApi.createReport({
         reporterUserId: user?.id,
         reporterName: formData.name,
@@ -54,7 +60,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
         incidentDate: formData.incidentDate,
         location: formData.location,
         description: formData.description,
-        evidenceFiles: formData.files.map((f) => f.name),
+        evidenceFiles,
       });
 
       setReportNumber(report.reportNumber);

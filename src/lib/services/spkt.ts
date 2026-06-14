@@ -1,4 +1,9 @@
 import { db, ensureDbReady } from '@/lib/db';
+import {
+  allocateReportNumber,
+  allocateLetterNumber,
+  allocateComplaintNumber,
+} from '@/lib/reference';
 import type {
   Report,
   ReportStatus,
@@ -104,8 +109,7 @@ export function getReportById(id: string): Report | null {
 }
 
 function generateReportNumber(): string {
-  const count = (db.prepare('SELECT COUNT(*) as c FROM reports').get() as { c: number }).c;
-  return `LP/${String(count + 1).padStart(3, '0')}/V/2026`;
+  return allocateReportNumber();
 }
 
 export interface CreateReportInput {
@@ -269,10 +273,7 @@ export function listLetters(nik?: string): LetterRequest[] {
 }
 
 function generateLetterNumber(letterTypeId: string): string {
-  const count = (db.prepare('SELECT COUNT(*) as c FROM letter_requests').get() as { c: number }).c;
-  const prefix =
-    letterTypeId === 'skck' ? 'SKCK' : letterTypeId === 'kehilangan' ? 'SKH' : 'IZIN';
-  return `${prefix}/${String(count + 1).padStart(3, '0')}/V/2026`;
+  return allocateLetterNumber(letterTypeId);
 }
 
 export interface CreateLetterInput {
@@ -344,8 +345,7 @@ export function listComplaints(nik?: string): Complaint[] {
 }
 
 function generateComplaintNumber(): string {
-  const count = (db.prepare('SELECT COUNT(*) as c FROM complaints').get() as { c: number }).c;
-  return `ADU/${String(count + 1).padStart(3, '0')}/V/2026`;
+  return allocateComplaintNumber();
 }
 
 export interface CreateComplaintInput {

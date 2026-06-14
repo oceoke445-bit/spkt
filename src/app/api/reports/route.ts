@@ -1,30 +1,39 @@
-import { NextResponse } from 'next/server';
 import { listReports, createReport } from '@/lib/services/spkt';
+import { requireAuth, requireRole } from '@/lib/auth-server';
+import { handleApi, jsonOk, ApiError } from '@/lib/api-response';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const nik = searchParams.get('nik') ?? undefined;
-    const assignedTo = searchParams.get('assignedTo') ?? undefined;
+export const GET = handleApi(async (request) => {
+  const sessionUser = await requireAuth(request);
+  const { searchParams } = new URL(request.url);
 
-    const reports = listReports({ nik, assignedTo });
-    return NextResponse.json({ reports });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+  if (sessionUser.role === 'user') {
+    if (!sessionUser.nik) {
+      throw new ApiError(400, 'NIK user tidak tersedia');
+    }
+    const reports = listReports({ nik: sessionUser.nik });
+    return jsonOk({ reports });
   }
-}
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const report = createReport(body);
-    return NextResponse.json({ report }, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Server error';
-    return NextResponse.json({ error: message }, { status: 400 });
-  }
-}
+  const nik = searchParams.get('nik') ?? undefined;
+  const assignedTo = searchParams.get('assignedTo') ?? undefined;
+  const reports = listReports({ nik, assignedTo });
+  return jsonOk({ reports });
+});
+
+export const POST = handleApi(async (request) => {
+  const sessionUser = await requireAuth(request);
+  const body = await request.json();
+
+  const report = createReport({
+    ...body,
+    reporterUserId: sessionUser.id,
+    reporterName: body.reporterName ?? sessionUser.name,
+    reporterNIK: body.reporterNIK ?? sessionUser.nik ?? body.reporterNIK,
+    reporterPhone: body.reporterPhone ?? sessionUser.phone ?? body.reporterPhone,
+  });
+
+  return jsonOk({ report }, 201);
+});

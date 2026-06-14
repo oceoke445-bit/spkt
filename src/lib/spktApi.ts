@@ -10,8 +10,11 @@ import type {
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     ...options,
+    credentials: 'same-origin',
     headers: {
-      'Content-Type': 'application/json',
+      ...(!(options?.body instanceof FormData)
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       ...options?.headers,
     },
   });
@@ -79,6 +82,13 @@ export interface CreateComplaintPayload {
 }
 
 export const spktApi = {
+  getSession: () => request<{ user: LoginResponse['user'] | null }>('/auth/session'),
+
+  logout: () =>
+    request<{ message: string }>('/auth/logout', {
+      method: 'POST',
+    }),
+
   login: (email: string, password: string) =>
     request<LoginResponse>('/auth/login', {
       method: 'POST',
@@ -133,4 +143,19 @@ export const spktApi = {
 
   getUsers: () =>
     request<{ users: Array<{ id: string; name: string; email: string; role: string }> }>('/users'),
+
+  uploadFiles: (files: File[]) => {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('files', file);
+    }
+    return request<{
+      files: Array<{ storedName: string; originalName: string; size: number; mimeType: string }>;
+    }>('/upload', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  getFileUrl: (storedName: string) => `/api/files/${encodeURIComponent(storedName)}`,
 };

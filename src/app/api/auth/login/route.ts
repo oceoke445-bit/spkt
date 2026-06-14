@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { authenticateUser } from '@/lib/services/spkt';
+import {
+  createSession,
+  getSessionCookieName,
+  getSessionMaxAgeSec,
+  toPublicUser,
+} from '@/lib/auth-server';
+import { jsonError, jsonOk } from '@/lib/api-response';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,9 +25,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email atau password tidak valid' }, { status: 401 });
     }
 
-    return NextResponse.json({ user });
+    const token = createSession(user.id);
+    const response = jsonOk({ user: toPublicUser(user) });
+    response.cookies.set(getSessionCookieName(), token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: getSessionMaxAgeSec(),
+    });
+    return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return jsonError(error);
   }
 }

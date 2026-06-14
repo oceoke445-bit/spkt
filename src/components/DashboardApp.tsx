@@ -20,9 +20,17 @@ import { AdminCSI } from '@/components/AdminCSI';
 import { spktApi } from '@/lib/spktApi';
 
 export default function DashboardApp() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
+        <p className="text-blue-200">Memuat sesi...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return <LoginPage />;
