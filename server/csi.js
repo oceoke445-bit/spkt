@@ -1,0 +1,176 @@
+import { db, MAX_SCORE } from './db.js';
+
+const SERVICE_LABELS = {
+  report: 'Buat Laporan',
+  letter: 'Layanan Surat',
+  complaint: 'Pengaduan',
+};
+
+export function getDimensions() {
+  return db
+    .prepare('SELECT id, code, name, weight FROM survey_dimensions ORDER BY id')
+    .all();
+}
+
+export function submitSurvey(payload) {
+  const dimensions = getDimensions();
+  const dimensionMap = new Map(dimensions.map((d) => [d.id, d]));
+
+  const scores = payload.responses.map((r) => {
+    const dimension = dimensionMap.get(r.dimensionId);
+    if (!dimension) {
+      throw new Error(`Dimensi tidak valid: ${r.dimensionId}`);
+    }
+    if (r.score < 1 || r.score > MAX_SCORE) {
+      throw new Error('Skor harus antara 1 dan 4');
+    }
+    return { score: r.score, weight: dimension.weight };
+  });
+
+  if (scores.length !== dimensions.length) {
+    throw new Error('Semua dimensi penilaian harus diisi');
+  }
+
+  let weightedSum = 0;
+  let maxWeighted = 0;
+  for (const { score, weight } of scores) {
+    weightedSum += weight * score;
+    maxWeighted += weight * MAX_SCORE;
+  }
+  const csiScore = maxWeighted === 0 ? 0 : Math.round((weightedSum / maxWeighted) * 10000) / 100;
+
+  const insertSurvey = db.prepare(`
+    INSERT INTO satisfaction_surveys
+      (user_id, user_name, user_email, service_type, service_label, reference_id, comment, csi_score, submitted_at)
+    VALUES (@userId, @userName, @userEmail, @serviceType, @serviceLabel, @referenceId, @comment, @csiScore, datetime('now'))
+  `);
+
+  const insertResponse = db.prepare(`
+    INSERT INTO survey_responses (survey_id, dimension_id, score)
+    VALUES (@surveyId, @dimensionId, @score)
+  `);
+
+  db.exec('BEGIN');
+  try {
+    const result = insertSurvey.run({
+      userId: payload.userId ?? null,
+      userName: payload.userName,
+      userEmail: payload.userEmail ?? null,
+      serviceType: payload.serviceType,
+      serviceLabel: payload.serviceLabel ?? SERVICE_LABELS[payload.serviceType] ?? payload.serviceType,
+      referenceId: payload.referenceId ?? null,
+      comment: payload.comment ?? null,
+      csiScore,
+    });
+
+    const surveyId = Number(result.lastInsertRowid);
+
+    for (const response of payload.responses) {
+      insertResponse.run({
+        surveyId,
+        dimensionId: response.dimensionId,
+        score: response.score,
+      });
+    }
+
+    db.exec('COMMIT');
+    return { id: surveyId, csiScore };
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+export function getCsiSummary() {
+  const overall = db.prepare(`
+    SELECT
+      COUNT(*) as total_responses,
+      ROUND(AVG(csi_score), 2) as average_csi,
+      ROUND(MIN(csi_score), 2) as min_csi,
+      ROUND(MAX(csi_score), 2) as max_csi
+    FROM satisfaction_surveys
+  `).get();
+
+  const byService = db.prepare(`
+    SELECT
+      service_type,
+      service_label,
+      COUNT(*) as count,
+      ROUND(AVG(csi_score), 2) as csi
+    FROM satisfaction_surveys
+    GROUP BY service_type, service_label
+    ORDER BY count DESC
+  `).all();
+
+  const byDimension = db.prepare(`
+    SELECT
+      d.id as dimension_id,
+      d.code,
+      d.name,
+      d.weight,
+      COUNT(sr.id) as response_count,
+      ROUND(AVG(sr.score), 2) as average_score,
+      ROUND((SUM(d.weight * sr.score) / SUM(d.weight * ${MAX_SCORE})) * 100, 2) as csi
+    FROM survey_dimensions d
+    LEFT JOIN survey_responses sr ON sr.dimension_id = d.id
+    GROUP BY d.id
+    ORDER BY d.id
+  `).all();
+
+  const monthly = db.prepare(`
+    SELECT
+      strftime('%Y-%m', submitted_at) as month,
+      COUNT(*) as count,
+      ROUND(AVG(csi_score), 2) as csi
+    FROM satisfaction_surveys
+    GROUP BY strftime('%Y-%m', submitted_at)
+    ORDER BY month ASC
+  `).all();
+
+  return {
+    overall: {
+      totalResponses: overall?.total_responses ?? 0,
+      averageCsi: overall?.average_csi ?? 0,
+      minCsi: overall?.min_csi ?? 0,
+      maxCsi: overall?.max_csi ?? 0,
+    },
+    byService: byService.map((row) => ({
+      serviceType: row.service_type,
+      serviceLabel: row.service_label,
+      count: row.count,
+      csi: row.csi ?? 0,
+    })),
+    byDimension: byDimension.map((row) => ({
+      dimensionId: row.dimension_id,
+      code: row.code,
+      name: row.name,
+      weight: row.weight,
+      responseCount: row.response_count,
+      averageScore: row.average_score ?? 0,
+      csi: row.csi ?? 0,
+    })),
+    monthly: monthly.map((row) => ({
+      month: row.month,
+      count: row.count,
+      csi: row.csi ?? 0,
+    })),
+  };
+}
+
+export function getRecentSurveys(limit = 20) {
+  return db.prepare(`
+    SELECT
+      id,
+      user_name,
+      user_email,
+      service_type,
+      service_label,
+      reference_id,
+      comment,
+      csi_score,
+      submitted_at
+    FROM satisfaction_surveys
+    ORDER BY submitted_at DESC
+    LIMIT ?
+  `).all(limit);
+}

@@ -13,6 +13,10 @@ import { mockOfficers, Officer } from '../data/officers';
 import { Shield, UserX, RefreshCw, AlertTriangle, Search, Users, FileText, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 
+const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
+const reportItemClass =
+  'border border-blue-600/50 rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur';
+
 export const AdminControl: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [overrideStatus, setOverrideStatus] = useState<ReportStatus>('verified');
@@ -78,37 +82,43 @@ export const AdminControl: React.FC = () => {
 
       {/* Admin Powers */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-red-200 bg-red-50">
+        <Card className="bg-gradient-to-br from-red-900/50 to-blue-900/80 border-red-500/40 backdrop-blur">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <Shield className="w-10 h-10 text-red-600" />
+              <div className="p-2 rounded-lg bg-red-500/20">
+                <Shield className="w-8 h-8 text-red-300" />
+              </div>
               <div>
-                <h3 className="font-semibold text-red-900">Override Status</h3>
-                <p className="text-sm text-red-700">Ubah status laporan</p>
+                <h3 className="font-semibold text-white">Override Status</h3>
+                <p className="text-sm text-blue-200">Ubah status laporan</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="bg-gradient-to-br from-amber-900/50 to-blue-900/80 border-amber-500/40 backdrop-blur">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <RefreshCw className="w-10 h-10 text-orange-600" />
+              <div className="p-2 rounded-lg bg-amber-500/20">
+                <RefreshCw className="w-8 h-8 text-amber-300" />
+              </div>
               <div>
-                <h3 className="font-semibold text-orange-900">Reassign Officer</h3>
-                <p className="text-sm text-orange-700">Tugaskan ulang petugas</p>
+                <h3 className="font-semibold text-white">Reassign Officer</h3>
+                <p className="text-sm text-blue-200">Tugaskan ulang petugas</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-purple-200 bg-purple-50">
+        <Card className="bg-gradient-to-br from-purple-900/50 to-blue-900/80 border-purple-500/40 backdrop-blur">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <UserX className="w-10 h-10 text-purple-600" />
+              <div className="p-2 rounded-lg bg-purple-500/20">
+                <UserX className="w-8 h-8 text-purple-300" />
+              </div>
               <div>
-                <h3 className="font-semibold text-purple-900">Suspend User</h3>
-                <p className="text-sm text-purple-700">Tangguhkan akun</p>
+                <h3 className="font-semibold text-white">Suspend User</h3>
+                <p className="text-sm text-blue-200">Tangguhkan akun</p>
               </div>
             </div>
           </CardContent>
@@ -116,7 +126,7 @@ export const AdminControl: React.FC = () => {
       </div>
 
       {/* Search */}
-      <Card className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur">
+      <Card className={cardClass}>
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
@@ -124,14 +134,14 @@ export const AdminControl: React.FC = () => {
               placeholder="Cari laporan (nomor, nama, jenis kasus)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 border-blue-200 focus:border-blue-400"
+              className="pl-10 bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400 focus:border-blue-400"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* All Reports with Admin Actions */}
-      <Card className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur">
+      <Card className={cardClass}>
         <CardHeader>
           <CardTitle className="text-white">Semua Laporan</CardTitle>
           <CardDescription className="text-blue-200">Kontrol penuh terhadap semua laporan</CardDescription>
@@ -139,10 +149,7 @@ export const AdminControl: React.FC = () => {
         <CardContent>
           <div className="space-y-3">
             {filteredReports.map((report) => (
-              <div
-                key={report.id}
-                className="border border-blue-600/50 rounded-xl p-4 hover:shadow-md hover:border-blue-500/50 transition-all bg-gradient-to-r from-white to-blue-50/30"
-              >
+              <div key={report.id} className={reportItemClass}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -151,22 +158,26 @@ export const AdminControl: React.FC = () => {
                         {getStatusLabel(report.status)}
                       </span>
                       {report.priority && (
-                        <Badge variant={
-                          report.priority === 'urgent' ? 'destructive' :
-                          report.priority === 'high' ? 'default' :
-                          'secondary'
-                        }>
+                        <Badge
+                          className={
+                            report.priority === 'urgent'
+                              ? 'bg-red-500/30 text-red-200 border border-red-400/50'
+                              : report.priority === 'high'
+                                ? 'bg-amber-500/30 text-amber-200 border border-amber-400/50'
+                                : 'bg-blue-500/30 text-blue-200 border border-blue-400/50'
+                          }
+                        >
                           {report.priority.toUpperCase()}
                         </Badge>
                       )}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-blue-200">
                       <div>
-                        <FileText className="w-3 h-3 inline mr-1" />
+                        <FileText className="w-3 h-3 inline mr-1 text-sky-300" />
                         {report.caseType}
                       </div>
                       <div>
-                        <Users className="w-3 h-3 inline mr-1" />
+                        <Users className="w-3 h-3 inline mr-1 text-cyan-300" />
                         {report.reporterName}
                       </div>
                       {report.assignedTo && (
@@ -190,29 +201,28 @@ export const AdminControl: React.FC = () => {
                     }}
                     className="shadow-sm"
                   >
-                    <Shield className="w-3 h-3 mr-1" />
+                    <Shield className="w-3 h-3 mr-1 text-rose-300" />
                     Override
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
                     onClick={() => {
                       setSelectedReport(report);
                       setReassignOfficer(report.assignedTo || '');
                       setShowReassignDialog(true);
                     }}
-                    className="border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
+                    className="bg-sky-500 hover:bg-sky-600 text-white border border-sky-400/50 shadow-sm [&_svg]:text-sky-100"
                   >
-                    <RefreshCw className="w-3 h-3 mr-1" />
+                    <RefreshCw className="w-3 h-3 mr-1 text-amber-300" />
                     Reassign
                   </Button>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => handleSuspendUser(report.id)}
-                    className="text-blue-200 hover:bg-blue-800/50 hover:text-blue-100"
+                    className="border border-rose-500/50 bg-rose-900/30 text-rose-300 hover:bg-rose-900/50 hover:text-rose-100 hover:border-rose-400/60 shadow-sm"
                   >
-                    <Ban className="w-3 h-3 mr-1" />
+                    <Ban className="w-3 h-3 mr-1 text-rose-300" />
                     Suspend User
                   </Button>
                 </div>
@@ -226,16 +236,16 @@ export const AdminControl: React.FC = () => {
       <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
         <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-lg max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="w-5 h-5" />
+            <DialogTitle className="flex items-center gap-2 text-red-300">
+              <AlertTriangle className="w-5 h-5 text-amber-300" />
               Override Status Laporan
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-blue-200">
               Anda akan mengubah status laporan {selectedReport?.reportNumber}
             </DialogDescription>
           </DialogHeader>
 
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="bg-red-900/40 border-red-500/50 text-red-200">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <strong>PERHATIAN:</strong> Override akan tercatat dalam audit log sistem.
@@ -245,14 +255,14 @@ export const AdminControl: React.FC = () => {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Status Saat Ini</Label>
+              <Label className="text-blue-200">Status Saat Ini</Label>
               <div className={`px-3 py-2 rounded-lg border ${getStatusBadgeColor(selectedReport?.status || 'submitted')}`}>
                 {getStatusLabel(selectedReport?.status || 'submitted')}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="newStatus">Status Baru *</Label>
+              <Label className="text-blue-200" htmlFor="newStatus">Status Baru *</Label>
               <Select value={overrideStatus} onValueChange={(value) => setOverrideStatus(value as ReportStatus)}>
                 <SelectTrigger className="bg-blue-900/50 border-blue-500/50 text-white">
                   <SelectValue />
@@ -269,7 +279,7 @@ export const AdminControl: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason">Alasan Override *</Label>
+              <Label className="text-blue-200" htmlFor="reason">Alasan Override *</Label>
               <Textarea
                 id="reason"
                 value={overrideReason}
@@ -277,15 +287,20 @@ export const AdminControl: React.FC = () => {
                 placeholder="Jelaskan alasan override status..."
                 rows={4}
                 required
+                className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
               />
             </div>
 
             <div className="flex gap-3 pt-4">
               <Button onClick={handleOverrideStatus} variant="destructive" className="flex-1">
-                <Shield className="w-4 h-4 mr-2" />
+                <Shield className="w-4 h-4 mr-2 text-rose-200" />
                 Konfirmasi Override
               </Button>
-              <Button variant="outline" onClick={() => setShowOverrideDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowOverrideDialog(false)}
+                className="border-blue-500/50 text-blue-200 hover:bg-blue-800/50 hover:text-white"
+              >
                 Batal
               </Button>
             </div>
@@ -297,8 +312,8 @@ export const AdminControl: React.FC = () => {
       <Dialog open={showReassignDialog} onOpenChange={setShowReassignDialog}>
         <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-lg max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
           <DialogHeader>
-            <DialogTitle>Tugaskan Ulang Petugas</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Tugaskan Ulang Petugas</DialogTitle>
+            <DialogDescription className="text-blue-200">
               Laporan {selectedReport?.reportNumber}
             </DialogDescription>
           </DialogHeader>
@@ -307,12 +322,12 @@ export const AdminControl: React.FC = () => {
             {selectedReport?.assignedTo && (
               <div className="bg-blue-800/50 border border-blue-600/50 p-3 rounded-lg">
                 <p className="text-sm text-blue-200">Petugas Saat Ini:</p>
-                <p className="font-medium">{selectedReport.assignedTo}</p>
+                <p className="font-medium text-white">{selectedReport.assignedTo}</p>
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="officer">Pilih Petugas Baru *</Label>
+              <Label className="text-blue-200" htmlFor="officer">Pilih Petugas Baru *</Label>
               <Select value={reassignOfficer} onValueChange={setReassignOfficer}>
                 <SelectTrigger className="bg-blue-900/50 border-blue-500/50 text-white">
                   <SelectValue placeholder="Pilih petugas..." />
@@ -323,11 +338,15 @@ export const AdminControl: React.FC = () => {
                       <div className="flex items-center justify-between w-full">
                         <span>{officer.name}</span>
                         <div className="flex items-center gap-2 ml-4">
-                          <Badge variant={
-                            officer.status === 'available' ? 'default' :
-                            officer.status === 'busy' ? 'secondary' :
-                            'outline'
-                          } className="text-xs">
+                          <Badge
+                            className={
+                              officer.status === 'available'
+                                ? 'bg-green-500/30 text-green-200 border border-green-400/50 text-xs'
+                                : officer.status === 'busy'
+                                  ? 'bg-amber-500/30 text-amber-200 border border-amber-400/50 text-xs'
+                                  : 'bg-gray-500/30 text-gray-200 border border-gray-400/50 text-xs'
+                            }
+                          >
                             {officer.status}
                           </Badge>
                           <span className="text-xs text-blue-300">
@@ -342,11 +361,18 @@ export const AdminControl: React.FC = () => {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button onClick={handleReassignOfficer} className="flex-1">
-                <RefreshCw className="w-4 h-4 mr-2" />
+              <Button
+                onClick={handleReassignOfficer}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              >
+                <RefreshCw className="w-4 h-4 mr-2 text-sky-200" />
                 Tugaskan Ulang
               </Button>
-              <Button variant="outline" onClick={() => setShowReassignDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowReassignDialog(false)}
+                className="border-blue-500/50 text-blue-200 hover:bg-blue-800/50 hover:text-white"
+              >
                 Batal
               </Button>
             </div>

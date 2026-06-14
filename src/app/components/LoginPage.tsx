@@ -46,7 +46,7 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-4 shadow-2xl ring-4 ring-blue-400/30">
-            <ShieldCheck className="w-12 h-12 text-white" />
+            <ShieldCheck className="w-12 h-12 text-sky-200" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">SPKT Digital</h1>
           <p className="text-blue-200">Sistem Pelayanan Kepolisian Terpadu</p>

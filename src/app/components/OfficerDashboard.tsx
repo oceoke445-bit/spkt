@@ -25,26 +25,26 @@ export const OfficerDashboard: React.FC = () => {
     {
       title: 'Belum Ditugaskan',
       value: unassignedReports.length,
-      icon: <Inbox className="w-6 h-6 text-blue-600" />,
-      bgColor: 'bg-blue-50'
+      icon: <Inbox className="w-6 h-6 text-sky-300" />,
+      bgColor: 'bg-sky-500/20'
     },
     {
       title: 'Ditugaskan ke Saya',
       value: assignedToMe.length,
-      icon: <User className="w-6 h-6 text-indigo-600" />,
-      bgColor: 'bg-indigo-50'
+      icon: <User className="w-6 h-6 text-indigo-300" />,
+      bgColor: 'bg-indigo-500/20'
     },
     {
       title: 'Sedang Diproses',
       value: myReports.filter(r => r.status === 'processing').length,
-      icon: <Clock className="w-6 h-6 text-yellow-600" />,
-      bgColor: 'bg-yellow-50'
+      icon: <Clock className="w-6 h-6 text-amber-300" />,
+      bgColor: 'bg-amber-500/20'
     },
     {
       title: 'Selesai Hari Ini',
       value: myReports.filter(r => r.status === 'completed').length,
-      icon: <CheckCircle2 className="w-6 h-6 text-green-600" />,
-      bgColor: 'bg-green-50'
+      icon: <CheckCircle2 className="w-6 h-6 text-emerald-300" />,
+      bgColor: 'bg-emerald-500/20'
     }
   ];
 

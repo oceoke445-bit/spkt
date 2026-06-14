@@ -14,6 +14,7 @@ import { AdminControl } from "./components/AdminControl";
 import { Information } from "./components/Information";
 import { Complaints } from "./components/Complaints";
 import { Settings } from "./components/Settings";
+import { AdminCSI } from "./components/AdminCSI";
 import { Toaster } from "./components/ui/sonner";
 
 const MainApp: React.FC = () => {
@@ -78,6 +79,8 @@ const MainApp: React.FC = () => {
           return <UserManagement />;
         case "statistics":
           return <AdminDashboard />;
+        case "csi-dashboard":
+          return <AdminCSI />;
         case "settings":
           return <Settings />;
         default:

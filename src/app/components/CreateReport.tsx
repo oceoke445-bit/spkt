@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Alert, AlertDescription } from './ui/alert';
 import { useAuth } from '../contexts/AuthContext';
 import { caseTypes } from '../data/mockData';
+import { SatisfactionForm } from './SatisfactionForm';
 import { CheckCircle2, Upload, MapPin, Calendar, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,6 +29,8 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
     files: [] as File[]
   });
   const [submitted, setSubmitted] = useState(false);
+  const [reportNumber, setReportNumber] = useState('');
+  const [showSatisfaction, setShowSatisfaction] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -44,7 +47,10 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
 
     // Simulate submission
     setTimeout(() => {
+      const number = `LP/${String(Math.floor(Math.random() * 900) + 100)}/V/2026`;
+      setReportNumber(number);
       setSubmitted(true);
+      setShowSatisfaction(true);
       toast.success('Laporan berhasil dikirim!', {
         description: 'Tim kami akan segera memproses laporan Anda'
       });
@@ -59,36 +65,46 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
 
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <Card className="border-green-500/50 bg-gradient-to-br from-green-900/80 to-green-800/80 shadow-lg backdrop-blur">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-              <CheckCircle2 className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Laporan Berhasil Dikirim!</h2>
-            <p className="text-green-100 mb-1">Nomor Laporan: <strong>LP/004/V/2026</strong></p>
-            <p className="text-sm text-green-200 mb-6">
-              Laporan Anda telah diterima dan akan segera diproses oleh petugas kami.
-              Anda dapat melacak status laporan melalui nomor laporan di atas.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
-                onClick={() => onNavigate('my-reports')}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
-              >
-                Lihat Laporan Saya
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onNavigate('dashboard')}
-                className="w-full sm:w-auto border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
-              >
-                Kembali ke Dashboard
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <div className="max-w-2xl mx-auto">
+          <Card className="border-green-500/50 bg-gradient-to-br from-green-900/80 to-green-800/80 shadow-lg backdrop-blur">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+                <CheckCircle2 className="w-10 h-10 text-emerald-100" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Laporan Berhasil Dikirim!</h2>
+              <p className="text-green-100 mb-1">Nomor Laporan: <strong>{reportNumber}</strong></p>
+              <p className="text-sm text-green-200 mb-6">
+                Laporan Anda telah diterima dan akan segera diproses oleh petugas kami.
+                Anda dapat melacak status laporan melalui nomor laporan di atas.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => onNavigate('my-reports')}
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                >
+                  Lihat Laporan Saya
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => onNavigate('dashboard')}
+                  className="w-full sm:w-auto border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
+                >
+                  Kembali ke Dashboard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <SatisfactionForm
+          open={showSatisfaction}
+          onOpenChange={setShowSatisfaction}
+          serviceType="report"
+          serviceLabel="Buat Laporan"
+          referenceId={reportNumber}
+        />
+      </>
     );
   }
 
@@ -269,26 +285,24 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
           <Button
             type="submit"
             size="lg"
-            className="w-full sm:flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+            className="w-full sm:flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md [&_svg]:text-sky-200"
           >
             <FileText className="w-4 h-4 mr-2" />
             Kirim Laporan
           </Button>
           <Button
             type="button"
-            variant="outline"
             size="lg"
             onClick={handleSaveDraft}
-            className="w-full sm:w-auto border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
+            className="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white shadow-md"
           >
             Simpan Draft
           </Button>
           <Button
             type="button"
-            variant="ghost"
             size="lg"
             onClick={() => onNavigate('dashboard')}
-            className="w-full sm:w-auto text-blue-300 hover:bg-blue-700/50 hover:text-blue-100"
+            className="w-full sm:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md"
           >
             Batal
           </Button>

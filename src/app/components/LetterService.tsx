@@ -8,7 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from './ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { letterTypes, mockLetterRequests, getStatusBadgeColor, getStatusLabel } from '../data/mockData';
+import { SatisfactionForm } from './SatisfactionForm';
 import { Mail, Calendar, FileText, CheckCircle2, ArrowLeft, Upload } from 'lucide-react';
+import { IconBadge, letterTypeIcons } from './iconStyles';
 import { toast } from 'sonner';
 
 type LetterType = typeof letterTypes[number];
@@ -17,6 +19,8 @@ export const LetterService: React.FC = () => {
   const { user } = useAuth();
   const [selectedLetter, setSelectedLetter] = useState<LetterType | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showSatisfaction, setShowSatisfaction] = useState(false);
+  const [lastReference, setLastReference] = useState('');
   const [formData, setFormData] = useState({
     name: user?.name || '',
     nik: user?.nik || '',
@@ -35,11 +39,15 @@ export const LetterService: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const prefix = selectedLetter?.id === 'skck' ? 'SKCK' : selectedLetter?.id === 'kehilangan' ? 'SKH' : 'IZIN';
+    const reference = `${prefix}/${String(Math.floor(Math.random() * 900) + 100)}/V/2026`;
+    setLastReference(reference);
     toast.success('Pengajuan berhasil!', {
       description: 'Pengajuan surat Anda sedang diproses'
     });
     setShowForm(false);
     setSelectedLetter(null);
+    setShowSatisfaction(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +57,7 @@ export const LetterService: React.FC = () => {
   };
 
   return (
+    <>
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-white">Layanan Surat</h1>
@@ -59,23 +68,31 @@ export const LetterService: React.FC = () => {
       {!showForm && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {letterTypes.map((letter) => (
+            {letterTypes.map((letter) => {
+              const iconConfig = letterTypeIcons[letter.id];
+              const LetterIcon = iconConfig?.icon;
+              return (
               <Card
                 key={letter.id}
                 className="cursor-pointer hover:shadow-lg transition-all border-2 border-blue-600/50 hover:border-blue-400 bg-gradient-to-b from-blue-900/80 to-blue-800/80 backdrop-blur"
                 onClick={() => handleSelectLetter(letter)}
               >
                 <CardContent className="p-6 text-center">
-                  <div className="text-5xl mb-4">{letter.icon}</div>
+                  {LetterIcon && (
+                    <div className="mb-4 flex justify-center">
+                      <IconBadge icon={LetterIcon} wrap={iconConfig.wrap} color={iconConfig.color} size="lg" />
+                    </div>
+                  )}
                   <h3 className="font-semibold text-white mb-2">{letter.name}</h3>
                   <p className="text-sm text-blue-200 mb-4">{letter.description}</p>
-                  <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md">
+                  <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md [&_svg]:text-sky-200">
                     <Mail className="w-4 h-4 mr-2" />
                     Ajukan Sekarang
                   </Button>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           {/* My Letter Requests */}
@@ -278,20 +295,19 @@ export const LetterService: React.FC = () => {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full sm:flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                  className="w-full sm:flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md [&_svg]:text-sky-200"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Ajukan Permohonan
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
                   size="lg"
                   onClick={() => {
                     setShowForm(false);
                     setSelectedLetter(null);
                   }}
-                  className="border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
+                  className="w-full sm:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md"
                 >
                   Batal
                 </Button>
@@ -301,5 +317,14 @@ export const LetterService: React.FC = () => {
         </Card>
       )}
     </div>
+
+    <SatisfactionForm
+      open={showSatisfaction}
+      onOpenChange={setShowSatisfaction}
+      serviceType="letter"
+      serviceLabel="Layanan Surat"
+      referenceId={lastReference}
+    />
+    </>
   );
 };

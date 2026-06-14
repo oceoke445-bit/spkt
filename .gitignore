@@ -37,3 +37,8 @@ Thumbs.db
 
 # TypeScript cache
 *.tsbuildinfo
+
+# SQLite database
+data/*.db
+data/*.db-*
+data/*.db-journal

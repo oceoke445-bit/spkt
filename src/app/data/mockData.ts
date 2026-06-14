@@ -58,20 +58,17 @@ export const letterTypes = [
     id: 'skck',
     name: 'SKCK (Surat Keterangan Catatan Kepolisian)',
     description: 'Surat keterangan untuk keperluan administratif',
-    icon: '📋'
   },
   {
     id: 'kehilangan',
     name: 'Surat Keterangan Kehilangan',
     description: 'Surat keterangan barang hilang',
-    icon: '📄'
   },
   {
     id: 'keramaian',
     name: 'Izin Keramaian',
     description: 'Izin untuk mengadakan acara atau keramaian',
-    icon: '🎉'
-  }
+  },
 ];
 
 export const mockReports: Report[] = [
@@ -197,23 +194,23 @@ export const mockLetterRequests: LetterRequest[] = [
 export const getStatusBadgeColor = (status: ReportStatus | LetterStatus): string => {
   switch (status) {
     case 'draft':
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+      return 'bg-gray-500/30 text-gray-200 border-gray-400/50';
     case 'submitted':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      return 'bg-yellow-500/30 text-yellow-200 border-yellow-400/50';
     case 'verified':
-      return 'bg-blue-100 text-blue-800 border-blue-300';
+      return 'bg-blue-500/30 text-blue-200 border-blue-400/50';
     case 'assigned':
-      return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+      return 'bg-indigo-500/30 text-indigo-200 border-indigo-400/50';
     case 'processing':
-      return 'bg-purple-100 text-purple-800 border-purple-300';
+      return 'bg-purple-500/30 text-purple-200 border-purple-400/50';
     case 'ready':
-      return 'bg-green-100 text-green-800 border-green-300';
+      return 'bg-green-500/30 text-green-200 border-green-400/50';
     case 'completed':
-      return 'bg-green-100 text-green-800 border-green-300';
+      return 'bg-green-500/30 text-green-200 border-green-400/50';
     case 'rejected':
-      return 'bg-red-100 text-red-800 border-red-300';
+      return 'bg-red-500/30 text-red-200 border-red-400/50';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+      return 'bg-gray-500/30 text-gray-200 border-gray-400/50';
   }
 };
 

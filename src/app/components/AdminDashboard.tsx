@@ -1,17 +1,29 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, type TooltipProps } from 'recharts';
 import { mockReports, caseTypes } from '../data/mockData';
-import { FileText, Users, CheckCircle2, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import { FileText, Users, CheckCircle2, TrendingUp, Clock } from 'lucide-react';
 
 const cardClass = "bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur";
 
-const tooltipStyle = {
-  backgroundColor: '#0d1b2a',
-  border: '1px solid rgba(59,130,246,0.4)',
-  borderRadius: '8px',
-  color: '#e3f2fd',
-};
+function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-lg border border-blue-500/40 bg-[#0d1b2a] px-3 py-2 shadow-lg">
+      {label && <p className="text-sm font-medium text-blue-100 mb-1">{label}</p>}
+      {payload.map((entry) => (
+        <p key={`${entry.name}-${entry.value}`} className="text-sm text-sky-300">
+          {entry.name}: <span className="font-semibold text-blue-50">{entry.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+const legendFormatter = (value: string) => (
+  <span style={{ color: '#93c5fd' }}>{value}</span>
+);
 
 export const AdminDashboard: React.FC = () => {
   const totalReports = mockReports.length;
@@ -95,7 +107,7 @@ export const AdminDashboard: React.FC = () => {
               <p className="text-sm text-blue-200 mb-1">{stat.title}</p>
               <p className="text-3xl font-bold text-white mb-2">{stat.value}</p>
               <p className="text-xs text-emerald-400 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
+                <TrendingUp className="w-3 h-3 text-violet-300" />
                 {stat.change}
               </p>
             </CardContent>
@@ -117,8 +129,8 @@ export const AdminDashboard: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                 <XAxis dataKey="month" stroke="#93c5fd" tick={axisStyle} />
                 <YAxis stroke="#93c5fd" tick={axisStyle} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: '12px', color: '#93c5fd' }} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} formatter={legendFormatter} />
                 <Line type="monotone" dataKey="laporan" stroke="#60a5fa" strokeWidth={2} name="Laporan Masuk" dot={{ fill: '#60a5fa', r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} />
                 <Line type="monotone" dataKey="selesai" stroke="#34d399" strokeWidth={2} name="Selesai" dot={{ fill: '#34d399', r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} />
               </LineChart>
@@ -140,7 +152,6 @@ export const AdminDashboard: React.FC = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   dataKey="value"
                   nameKey="name"
@@ -150,7 +161,12 @@ export const AdminDashboard: React.FC = () => {
                     <Cell key={`cell-${entry.id}-${entry.name}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend
+                  wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }}
+                  formatter={legendFormatter}
+                  iconType="circle"
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -171,7 +187,7 @@ export const AdminDashboard: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                 <XAxis dataKey="category" stroke="#93c5fd" tick={axisStyle} />
                 <YAxis stroke="#93c5fd" tick={axisStyle} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="count" fill="#60a5fa" name="Jumlah Laporan" radius={[8, 8, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>

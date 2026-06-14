@@ -22,6 +22,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SatisfactionForm } from './SatisfactionForm';
 
 type ComplaintStatus = 'submitted' | 'reviewing' | 'processing' | 'resolved' | 'closed';
 type ComplaintCategory = 'pelayanan' | 'petugas' | 'fasilitas' | 'sistem' | 'lainnya';
@@ -80,17 +81,17 @@ const complaintCategories = [
 const getStatusColor = (status: ComplaintStatus): string => {
   switch (status) {
     case 'submitted':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      return 'bg-yellow-500/30 text-yellow-200 border-yellow-400/50';
     case 'reviewing':
-      return 'bg-blue-100 text-blue-800 border-blue-500/50';
+      return 'bg-blue-500/30 text-blue-200 border-blue-400/50';
     case 'processing':
-      return 'bg-purple-100 text-purple-800 border-purple-300';
+      return 'bg-purple-500/30 text-purple-200 border-purple-400/50';
     case 'resolved':
-      return 'bg-green-100 text-green-800 border-green-300';
+      return 'bg-emerald-500/30 text-emerald-200 border-emerald-400/50';
     case 'closed':
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+      return 'bg-gray-500/30 text-gray-200 border-gray-400/50';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+      return 'bg-gray-500/30 text-gray-200 border-gray-400/50';
   }
 };
 
@@ -116,6 +117,8 @@ export const Complaints: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSatisfaction, setShowSatisfaction] = useState(false);
+  const [lastReference, setLastReference] = useState('');
   const [formData, setFormData] = useState({
     category: '' as ComplaintCategory | '',
     subject: '',
@@ -132,10 +135,13 @@ export const Complaints: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const reference = `ADU/${String(Math.floor(Math.random() * 900) + 100)}/V/2026`;
+    setLastReference(reference);
     toast.success('Pengaduan berhasil dikirim!', {
       description: 'Tim kami akan segera menindaklanjuti pengaduan Anda'
     });
     setShowForm(false);
+    setShowSatisfaction(true);
     setFormData({ category: '', subject: '', description: '', files: [] });
   };
 
@@ -149,24 +155,25 @@ export const Complaints: React.FC = () => {
     {
       label: 'Total Pengaduan',
       value: userComplaints.length,
-      icon: <MessageSquare className="w-5 h-5 text-blue-400" />,
-      color: 'bg-blue-900/50'
+      icon: <MessageSquare className="w-5 h-5 text-sky-300" />,
+      color: 'bg-sky-500/20'
     },
     {
       label: 'Sedang Diproses',
       value: userComplaints.filter(c => c.status === 'processing' || c.status === 'reviewing').length,
-      icon: <Clock className="w-5 h-5 text-yellow-600" />,
-      color: 'bg-yellow-50'
+      icon: <Clock className="w-5 h-5 text-amber-300" />,
+      color: 'bg-amber-500/20'
     },
     {
       label: 'Selesai',
       value: userComplaints.filter(c => c.status === 'resolved').length,
-      icon: <CheckCircle2 className="w-5 h-5 text-green-600" />,
-      color: 'bg-green-50'
+      icon: <CheckCircle2 className="w-5 h-5 text-emerald-300" />,
+      color: 'bg-emerald-500/20'
     }
   ];
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -175,7 +182,7 @@ export const Complaints: React.FC = () => {
         </div>
         <Button
           onClick={() => setShowForm(true)}
-          className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+          className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md [&_svg]:text-sky-200"
         >
           <Send className="w-4 h-4 mr-2" />
           Buat Pengaduan
@@ -254,15 +261,17 @@ export const Complaints: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-4 text-xs text-blue-300">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
+                      <Calendar className="w-3 h-3 text-cyan-300" />
                       {new Date(complaint.createdAt).toLocaleDateString('id-ID')}
                     </span>
-                    <Badge variant="outline">{complaintCategories.find(c => c.value === complaint.category)?.label}</Badge>
+                    <Badge className="bg-blue-500/30 text-blue-200 border-blue-400/50">
+                      {complaintCategories.find(c => c.value === complaint.category)?.label}
+                    </Badge>
                   </div>
                   {complaint.status === 'resolved' && (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
+                    <div className="mt-3 pt-3 border-t border-blue-600/50">
+                      <p className="text-xs text-emerald-300 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                         Pengaduan telah ditanggapi
                       </p>
                     </div>
@@ -376,9 +385,8 @@ export const Complaints: React.FC = () => {
               </Button>
               <Button
                 type="button"
-                variant="outline"
                 onClick={() => setShowForm(false)}
-                className="border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
+                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md"
               >
                 Batal
               </Button>
@@ -395,8 +403,8 @@ export const Complaints: React.FC = () => {
               <DialogHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <DialogTitle className="text-2xl">{selectedComplaint.complaintNumber}</DialogTitle>
-                    <DialogDescription className="mt-2">
+                    <DialogTitle className="text-2xl text-white">{selectedComplaint.complaintNumber}</DialogTitle>
+                    <DialogDescription className="mt-2 text-blue-200">
                       Dibuat pada {new Date(selectedComplaint.createdAt).toLocaleDateString('id-ID', {
                         weekday: 'long',
                         day: 'numeric',
@@ -420,13 +428,13 @@ export const Complaints: React.FC = () => {
                   <div className="bg-blue-800/50 border border-blue-600/50 rounded-lg p-4 space-y-3">
                     <div>
                       <span className="text-sm text-blue-200">Kategori</span>
-                      <p className="font-medium">
+                      <p className="font-medium text-white">
                         {complaintCategories.find(c => c.value === selectedComplaint.category)?.label}
                       </p>
                     </div>
                     <div>
                       <span className="text-sm text-blue-200">Subjek</span>
-                      <p className="font-medium">{selectedComplaint.subject}</p>
+                      <p className="font-medium text-white">{selectedComplaint.subject}</p>
                     </div>
                     <div>
                       <span className="text-sm text-blue-200">Deskripsi</span>
@@ -441,7 +449,7 @@ export const Complaints: React.FC = () => {
                     <h3 className="font-semibold text-white mb-3">Lampiran</h3>
                     <div className="grid grid-cols-2 gap-2">
                       {selectedComplaint.files.map((file, index) => (
-                        <div key={index} className="border rounded-lg p-3 flex items-center gap-2">
+                        <div key={index} className="border border-blue-500/40 rounded-lg p-3 flex items-center gap-2 bg-blue-900/40">
                           <FileText className="w-4 h-4 text-blue-200" />
                           <span className="text-sm text-blue-100">{file}</span>
                         </div>
@@ -452,14 +460,14 @@ export const Complaints: React.FC = () => {
 
                 {/* Response */}
                 {selectedComplaint.response && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="bg-emerald-900/40 border border-emerald-500/40 rounded-lg p-4">
                     <div className="flex items-start gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-green-600 mt-1" />
+                      <CheckCircle2 className="w-6 h-6 text-emerald-400 mt-1 shrink-0" />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-green-900 mb-1">Tanggapan</h4>
-                        <p className="text-sm text-green-800 mb-2">{selectedComplaint.response}</p>
+                        <h4 className="font-semibold text-emerald-200 mb-1">Tanggapan</h4>
+                        <p className="text-sm text-emerald-100 mb-2">{selectedComplaint.response}</p>
                         {selectedComplaint.responseDate && (
-                          <p className="text-xs text-green-700">
+                          <p className="text-xs text-emerald-300/80">
                             Ditanggapi pada {new Date(selectedComplaint.responseDate).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'long',
@@ -489,5 +497,14 @@ export const Complaints: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
+
+    <SatisfactionForm
+      open={showSatisfaction}
+      onOpenChange={setShowSatisfaction}
+      serviceType="complaint"
+      serviceLabel="Pengaduan"
+      referenceId={lastReference}
+    />
+    </>
   );
 };

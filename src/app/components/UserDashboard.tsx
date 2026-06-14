@@ -1,12 +1,41 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { FileText, Mail, Clock, CheckCircle2, AlertCircle, TrendingUp, Calendar } from 'lucide-react';
+import { FileText, Mail, Clock, CheckCircle2, TrendingUp, Calendar } from 'lucide-react';
 import { mockReports, mockLetterRequests, getStatusBadgeColor, getStatusLabel } from '../data/mockData';
 
 interface UserDashboardProps {
   onNavigate: (view: string) => void;
 }
+
+const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
+
+const quickActions = [
+  {
+    view: 'create-report',
+    title: 'Buat Laporan',
+    description: 'Laporkan kejadian',
+    icon: FileText,
+    iconBg: 'bg-sky-500/25',
+    iconColor: 'text-sky-300',
+  },
+  {
+    view: 'letter-service',
+    title: 'Ajukan Surat',
+    description: 'SKCK, Kehilangan, dll',
+    icon: Mail,
+    iconBg: 'bg-violet-500/25',
+    iconColor: 'text-violet-300',
+  },
+  {
+    view: 'my-reports',
+    title: 'Lacak Status',
+    description: 'Cek laporan Anda',
+    icon: Clock,
+    iconBg: 'bg-cyan-500/25',
+    iconColor: 'text-cyan-300',
+  },
+];
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
   const userReports = mockReports.filter(r => r.reporterNIK === '3201012345678901');
@@ -53,14 +82,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
-          <Card key={index} className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur">
+          <Card key={index} className={cardClass}>
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-blue-200 mb-1">{stat.title}</p>
                   <p className="text-3xl font-bold text-white">{stat.value}</p>
                   <p className="text-xs text-blue-300 mt-2 flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
+                    <TrendingUp className="w-3 h-3 text-sky-300" />
                     {stat.change}
                   </p>
                 </div>
@@ -74,51 +103,38 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Quick Actions */}
-      <Card className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur">
+      <Card className={cardClass}>
         <CardHeader>
           <CardTitle className="text-white">Aksi Cepat</CardTitle>
           <CardDescription className="text-blue-200">Layanan yang sering digunakan</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button
-              onClick={() => onNavigate('create-report')}
-              className="h-auto py-4 flex-col gap-2"
-            >
-              <FileText className="w-6 h-6" />
-              <div className="text-center">
-                <div className="font-semibold">Buat Laporan</div>
-                <div className="text-xs opacity-90">Laporkan kejadian</div>
-              </div>
-            </Button>
-            <Button
-              onClick={() => onNavigate('letter-service')}
-              variant="outline"
-              className="h-auto py-4 flex-col gap-2"
-            >
-              <Mail className="w-6 h-6" />
-              <div className="text-center">
-                <div className="font-semibold">Ajukan Surat</div>
-                <div className="text-xs">SKCK, Kehilangan, dll</div>
-              </div>
-            </Button>
-            <Button
-              onClick={() => onNavigate('my-reports')}
-              variant="outline"
-              className="h-auto py-4 flex-col gap-2"
-            >
-              <Clock className="w-6 h-6" />
-              <div className="text-center">
-                <div className="font-semibold">Lacak Status</div>
-                <div className="text-xs">Cek laporan Anda</div>
-              </div>
-            </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.view}
+                  type="button"
+                  onClick={() => onNavigate(action.view)}
+                  className="group flex flex-col items-center gap-3 rounded-xl border border-blue-500/40 bg-gradient-to-br from-blue-800/70 to-blue-900/80 p-5 text-white transition-all hover:border-blue-400/60 hover:from-blue-700/80 hover:to-blue-800/90 hover:shadow-lg hover:shadow-blue-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
+                >
+                  <div className={`rounded-xl p-3 ${action.iconBg} transition-transform group-hover:scale-110`}>
+                    <Icon className={`h-6 w-6 ${action.iconColor}`} />
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold">{action.title}</div>
+                    <div className="mt-1 text-xs text-blue-200">{action.description}</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
 
       {/* Recent Reports */}
-      <Card className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur">
+      <Card className={cardClass}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
