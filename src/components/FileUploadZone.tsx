@@ -1,8 +1,16 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Upload } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Upload, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 
 interface FileUploadZoneProps {
   files: File[];
@@ -13,6 +21,14 @@ interface FileUploadZoneProps {
   hint?: string;
   subHint?: string;
   className?: string;
+}
+
+function isImageFile(file: File): boolean {
+  return file.type.startsWith('image/');
+}
+
+function isPdfFile(file: File): boolean {
+  return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 }
 
 export function FileUploadZone({
@@ -26,6 +42,16 @@ export function FileUploadZone({
   className,
 }: FileUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const processFiles = (fileList: FileList | File[]) => {
     const incoming = Array.from(fileList);
@@ -66,6 +92,25 @@ export function FileUploadZone({
     }
   };
 
+  const openPreview = (file: File) => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setPreviewFile(file);
+  };
+
+  const closePreview = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+    setPreviewFile(null);
+  };
+
+  const canPreviewInline = previewFile && previewUrl && (isImageFile(previewFile) || isPdfFile(previewFile));
+
   return (
     <div className={className}>
       <div
@@ -103,16 +148,71 @@ export function FileUploadZone({
           {files.map((file, index) => (
             <div
               key={`${file.name}-${index}`}
-              className="flex items-center justify-between p-2 bg-blue-800/50 rounded border border-blue-600/50"
+              className="flex items-center gap-3 p-2 bg-blue-800/50 rounded border border-blue-600/50"
             >
-              <span className="text-sm text-blue-100 truncate">{file.name}</span>
-              <span className="text-xs text-blue-300 shrink-0 ml-2">
+              <span className="text-sm text-blue-100 truncate flex-1 min-w-0">{file.name}</span>
+              <span className="text-xs text-blue-300 shrink-0">
                 {(file.size / 1024).toFixed(1)} KB
               </span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => openPreview(file)}
+                className="shrink-0 h-8 px-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white border-0 shadow-md"
+              >
+                <Eye className="w-3.5 h-3.5 mr-1.5 text-sky-100" />
+                Review
+              </Button>
             </div>
           ))}
         </div>
       )}
+
+      <Dialog open={previewFile !== null} onOpenChange={(open) => !open && closePreview()}>
+        <DialogContent
+          className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-white truncate pr-6">
+              {previewFile?.name ?? 'Pratinjau File'}
+            </DialogTitle>
+            <DialogDescription className="text-blue-200">
+              {previewFile
+                ? `${(previewFile.size / 1024).toFixed(1)} KB`
+                : 'Pratinjau dokumen yang diupload'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-blue-500/40 bg-blue-950/50">
+            {canPreviewInline && isImageFile(previewFile) && (
+              <img
+                src={previewUrl}
+                alt={previewFile.name}
+                className="max-h-[70vh] w-full object-contain mx-auto"
+              />
+            )}
+            {canPreviewInline && isPdfFile(previewFile) && (
+              <iframe
+                src={previewUrl}
+                title={previewFile.name}
+                className="w-full h-[70vh] min-h-[400px] bg-white rounded"
+              />
+            )}
+            {previewFile && previewUrl && !isImageFile(previewFile) && !isPdfFile(previewFile) && (
+              <div className="p-8 text-center text-blue-200">
+                <p className="mb-4">Pratinjau tidak tersedia untuk tipe file ini.</p>
+                <Button
+                  type="button"
+                  onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                >
+                  Buka di tab baru
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
