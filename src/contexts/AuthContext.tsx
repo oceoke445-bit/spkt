@@ -37,9 +37,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) {
+        setUser(null);
+        setLoading(false);
+      }
+    }, 8000);
+
     spktApi
       .getSession()
       .then(({ user: sessionUser }) => {
+        if (cancelled) return;
         if (sessionUser) {
           setUser({
             id: sessionUser.id,
@@ -51,8 +61,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
         }
       })
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          window.clearTimeout(timeout);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {

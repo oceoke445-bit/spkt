@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers';
 import { db, ensureDbReady } from '@/lib/db';
 import type { DbUser } from '@/lib/types/spkt';
 import { ApiError } from '@/lib/api-response';
@@ -79,18 +78,13 @@ export function getUserBySessionToken(token: string): DbUser | null {
 }
 
 export async function getSessionUserFromRequest(request: Request): Promise<DbUser | null> {
-  const headerCookie = request.headers.get('cookie');
-  if (headerCookie) {
-    const match = headerCookie.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
-    if (match?.[1]) {
-      return getUserBySessionToken(match[1]);
-    }
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const match = cookieHeader.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
+  if (!match?.[1]) {
+    return null;
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  return getUserBySessionToken(token);
+  return getUserBySessionToken(decodeURIComponent(match[1]));
 }
 
 export async function requireAuth(request: Request): Promise<DbUser> {
