@@ -5,6 +5,14 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import {
   Info,
   AlertCircle,
   Phone,
@@ -16,47 +24,103 @@ import {
   Shield,
   HelpCircle,
   MessageSquare,
-  ExternalLink
+  ExternalLink,
+  ArrowRight,
 } from 'lucide-react';
 import { spktApi, type InfoArticle } from '@/lib/spktApi';
+import { spktDialogClass } from '@/lib/spktDialog';
 
 const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
 const tabsListClass = 'grid w-full grid-cols-1 sm:grid-cols-3 h-auto gap-1 bg-blue-950/60 border border-blue-500/40 p-1';
 const tabTriggerClass =
   'text-blue-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md [&_svg]:text-blue-300 data-[state=active]:[&_svg]:text-sky-200';
 
-const contacts = [
+interface ContactChannel {
+  id: string;
+  type: string;
+  icon: React.ReactNode;
+  value: string;
+  description: string;
+  cardClass: string;
+  iconWrap: string;
+  detail: string;
+  steps: string[];
+  actionLabel: string;
+  href: string;
+}
+
+const contacts: ContactChannel[] = [
   {
+    id: 'hotline',
     type: 'Hotline Darurat',
     icon: <Phone className="w-5 h-5" />,
     value: '110',
     description: 'Layanan darurat 24/7',
     cardClass: 'bg-gradient-to-br from-red-900/50 to-blue-900/80 border-red-500/40',
     iconWrap: 'bg-red-500/20 text-red-300',
+    detail:
+      'Nomor 110 adalah saluran darurat Polri yang beroperasi 24 jam sehari, 7 hari seminggu. Gunakan hanya untuk situasi darurat yang membutuhkan bantuan polisi segera, seperti kejahatan sedang terjadi, kecelakaan berat, atau ancaman terhadap jiwa.',
+    steps: [
+      'Tekan tombol Hubungi di bawah atau sambungkan ke nomor 110 dari ponsel Anda.',
+      'Jelaskan lokasi kejadian dengan jelas dan sebutkan jenis keadaan darurat.',
+      'Tetap di tempat aman dan tunggu instruksi petugas jika memungkinkan.',
+    ],
+    actionLabel: 'Hubungi 110',
+    href: 'tel:110',
   },
   {
+    id: 'whatsapp',
     type: 'WhatsApp',
     icon: <MessageSquare className="w-5 h-5" />,
     value: '+62 812-3456-7890',
     description: 'Chat dengan petugas',
     cardClass: 'bg-gradient-to-br from-emerald-900/50 to-blue-900/80 border-emerald-500/40',
     iconWrap: 'bg-emerald-500/20 text-emerald-300',
+    detail:
+      'Layanan WhatsApp SPKT Digital untuk konsultasi non-darurat, tanya jawab persyaratan layanan, dan bantuan penggunaan aplikasi. Petugas akan merespons pada hari kerja.',
+    steps: [
+      'Klik Buka WhatsApp untuk memulai percakapan.',
+      'Sampaikan nama, NIK (jika terkait layanan), dan pertanyaan Anda secara singkat.',
+      'Lampirkan screenshot atau nomor laporan jika menanyakan status layanan.',
+    ],
+    actionLabel: 'Buka WhatsApp',
+    href: 'https://wa.me/6281234567890?text=Halo%20SPKT%20Digital%2C%20saya%20ingin%20berkonsultasi.',
   },
   {
+    id: 'email',
     type: 'Email',
     icon: <Mail className="w-5 h-5" />,
     value: 'spkt@polri.go.id',
     description: 'Layanan email',
     cardClass: 'bg-gradient-to-br from-blue-800/80 to-blue-900/80 border-blue-500/50',
     iconWrap: 'bg-blue-500/20 text-blue-300',
+    detail:
+      'Kirim pertanyaan formal, keluhan tertulis, atau permintaan informasi layanan melalui email resmi SPKT. Pastikan subjek email jelas agar petugas dapat menindaklanjuti dengan cepat.',
+    steps: [
+      'Klik Kirim Email — aplikasi email Anda akan terbuka dengan alamat tujuan terisi.',
+      'Tulis subjek, misalnya: "Tanya Status Laporan LP/001/V/2026".',
+      'Sertakan data identitas dan nomor referensi layanan jika ada.',
+    ],
+    actionLabel: 'Kirim Email',
+    href: 'mailto:spkt@polri.go.id?subject=Pertanyaan%20Layanan%20SPKT%20Digital',
   },
   {
+    id: 'office',
     type: 'Alamat Kantor',
     icon: <MapPin className="w-5 h-5" />,
     value: 'Jl. Sudirman No. 123, Jakarta',
     description: 'Kantor pusat SPKT',
     cardClass: 'bg-gradient-to-br from-purple-900/50 to-blue-900/80 border-purple-500/40',
     iconWrap: 'bg-purple-500/20 text-purple-300',
+    detail:
+      'Kantor pusat SPKT melayani pengambilan dokumen, konsultasi langsung, dan layanan administratif kepolisian. Kunjungan disarankan pada jam operasional dengan membawa identitas asli.',
+    steps: [
+      'Klik Lihat Peta untuk membuka petunjuk arah di Google Maps.',
+      'Datang pada jam operasional: Senin–Jumat 08:00–16:00, Sabtu 08:00–13:00 WIB.',
+      'Bawa KTP asli dan nomor referensi layanan (laporan/surat) jika mengambil dokumen.',
+    ],
+    actionLabel: 'Lihat Peta',
+    href: 'https://www.google.com/maps/search/?api=1&query=Jl.+Sudirman+No.+123+Jakarta',
   },
 ];
 
@@ -83,12 +147,35 @@ const faqs = [
   }
 ];
 
+function formatArticleDate(date: string) {
+  return new Date(date).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function renderArticleBody(content: string) {
+  return content
+    .split(/\n\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph, index) => (
+      <p key={index} className="text-sm text-blue-100 leading-relaxed whitespace-pre-line">
+        {paragraph}
+      </p>
+    ));
+}
+
 export const Information: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('articles');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [infoArticles, setInfoArticles] = useState<InfoArticle[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
+  const [selectedArticle, setSelectedArticle] = useState<InfoArticle | null>(null);
+  const [selectedContact, setSelectedContact] = useState<ContactChannel | null>(null);
 
   useEffect(() => {
     spktApi
@@ -117,7 +204,7 @@ export const Information: React.FC = () => {
         <p className="text-blue-200 mt-1">Pusat informasi dan bantuan SPKT Digital</p>
       </div>
 
-      <Tabs defaultValue="articles" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className={tabsListClass}>
           <TabsTrigger value="articles" className={`text-xs sm:text-sm py-2 gap-1.5 ${tabTriggerClass}`}>
             <FileText className="w-4 h-4 shrink-0" />
@@ -135,7 +222,6 @@ export const Information: React.FC = () => {
 
         {/* Articles Tab */}
         <TabsContent value="articles" className="space-y-6">
-          {/* Search and Filter */}
           <Card className={cardClass}>
             <CardContent className="p-4">
               <div className="flex flex-col md:flex-row gap-3">
@@ -165,34 +251,49 @@ export const Information: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Articles Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredArticles.map((article) => (
-              <Card key={article.id} className="hover:shadow-lg transition-shadow cursor-pointer border-blue-500/50 bg-gradient-to-br from-blue-800/60 to-blue-700/60 backdrop-blur">
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge className="bg-blue-500/30 text-blue-100 border border-blue-400/50">{article.category}</Badge>
-                    <span className="text-xs text-blue-300">
-                      {new Date(article.date).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg text-white">{article.title}</CardTitle>
-                  <CardDescription className="text-blue-200">{article.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="link" className="p-0 h-auto text-blue-300 hover:text-blue-100">
-                    Baca Selengkapnya <ExternalLink className="w-3 h-3 ml-1" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {articlesLoading ? (
+            <div className="text-center py-12 text-blue-300">Memuat artikel...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredArticles.map((article) => (
+                <Card
+                  key={article.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer border-blue-500/50 bg-gradient-to-br from-blue-800/60 to-blue-700/60 backdrop-blur"
+                  onClick={() => setSelectedArticle(article)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge className="bg-blue-500/30 text-blue-100 border border-blue-400/50">{article.category}</Badge>
+                      <span className="text-xs text-blue-300">
+                        {new Date(article.date).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                    <CardTitle className="text-lg text-white">{article.title}</CardTitle>
+                    <CardDescription className="text-blue-200 line-clamp-2">{article.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="p-0 h-auto text-blue-300 hover:text-blue-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedArticle(article);
+                      }}
+                    >
+                      Baca Selengkapnya <ExternalLink className="w-3 h-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-          {filteredArticles.length === 0 && (
+          {!articlesLoading && filteredArticles.length === 0 && (
             <div className="text-center py-12">
               <Info className="w-16 h-16 text-blue-400/50 mx-auto mb-4" />
               <p className="text-blue-300">Tidak ada artikel ditemukan</p>
@@ -209,22 +310,27 @@ export const Information: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {contacts.map((contact, index) => (
-                  <div
-                    key={index}
-                    className={`${contact.cardClass} border rounded-lg p-6 backdrop-blur`}
+                {contacts.map((contact) => (
+                  <button
+                    key={contact.id}
+                    type="button"
+                    onClick={() => setSelectedContact(contact)}
+                    className={`${contact.cardClass} border rounded-lg p-6 backdrop-blur text-left w-full transition-all hover:border-blue-300/60 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50`}
                   >
                     <div className="flex items-start gap-4">
                       <div className={`p-3 rounded-lg ${contact.iconWrap}`}>
                         {contact.icon}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h3 className="font-semibold mb-1 text-white">{contact.type}</h3>
                         <p className="font-bold text-lg mb-1 text-white">{contact.value}</p>
                         <p className="text-sm text-blue-200">{contact.description}</p>
+                        <span className="inline-flex items-center gap-1 text-xs text-cyan-300 mt-3">
+                          Lihat detail <ArrowRight className="w-3 h-3" />
+                        </span>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </CardContent>
@@ -292,6 +398,7 @@ export const Information: React.FC = () => {
                     className="border border-blue-500/40 rounded-lg overflow-hidden bg-blue-950/30"
                   >
                     <button
+                      type="button"
                       onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
                       className="w-full p-4 text-left hover:bg-blue-800/50 transition-colors flex items-start justify-between gap-3"
                     >
@@ -325,9 +432,11 @@ export const Information: React.FC = () => {
                     melalui layanan pengaduan atau hubungi call center kami.
                   </p>
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
                     className="border-blue-400/50 text-blue-200 hover:bg-blue-700/50 hover:text-white"
+                    onClick={() => setActiveTab('contact')}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Hubungi Kami
@@ -338,6 +447,105 @@ export const Information: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Article detail dialog */}
+      <Dialog open={selectedArticle != null} onOpenChange={(open) => !open && setSelectedArticle(null)}>
+        <DialogContent className={spktDialogClass('3xl')}>
+          {selectedArticle && (
+            <>
+              <DialogHeader>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <Badge className="bg-blue-500/30 text-blue-100 border border-blue-400/50">
+                    {selectedArticle.category}
+                  </Badge>
+                  <span className="text-xs text-blue-300">{formatArticleDate(selectedArticle.date)}</span>
+                </div>
+                <DialogTitle className="text-white text-xl sm:text-2xl pr-6">
+                  {selectedArticle.title}
+                </DialogTitle>
+                <DialogDescription className="text-blue-200 text-base">
+                  {selectedArticle.description}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-2">
+                {renderArticleBody(selectedArticle.content)}
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2 sm:justify-start">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-blue-500/50 text-blue-200 hover:bg-blue-800/50 hover:text-white"
+                  onClick={() => setSelectedArticle(null)}
+                >
+                  Tutup
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact detail dialog */}
+      <Dialog open={selectedContact != null} onOpenChange={(open) => !open && setSelectedContact(null)}>
+        <DialogContent className={spktDialogClass('2xl')}>
+          {selectedContact && (
+            <>
+              <DialogHeader>
+                <div className={`inline-flex p-3 rounded-lg w-fit mb-2 ${selectedContact.iconWrap}`}>
+                  {selectedContact.icon}
+                </div>
+                <DialogTitle className="text-white text-xl">{selectedContact.type}</DialogTitle>
+                <DialogDescription className="text-blue-100 text-lg font-semibold">
+                  {selectedContact.value}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-1">
+                <p className="text-sm text-blue-100 leading-relaxed">{selectedContact.detail}</p>
+
+                <div className="rounded-lg border border-blue-500/40 bg-blue-950/40 p-4 space-y-2">
+                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-blue-300" />
+                    Langkah selanjutnya
+                  </h4>
+                  <ol className="space-y-2 pl-5 list-decimal text-sm text-blue-200">
+                    {selectedContact.steps.map((step, index) => (
+                      <li key={index}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-blue-500/50 text-blue-200 hover:bg-blue-800/50 hover:text-white w-full sm:w-auto"
+                  onClick={() => setSelectedContact(null)}
+                >
+                  Tutup
+                </Button>
+                <Button
+                  type="button"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                  asChild
+                >
+                  <a
+                    href={selectedContact.href}
+                    target={selectedContact.href.startsWith('http') ? '_blank' : undefined}
+                    rel={selectedContact.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  >
+                    {selectedContact.actionLabel}
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </a>
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

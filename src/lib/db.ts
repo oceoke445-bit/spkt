@@ -301,8 +301,92 @@ function migrateSchema() {
   `);
 
   seedInfoArticles();
+  syncInfoArticles();
   migratePlainPasswords();
 }
+
+const INFO_ARTICLE_SEED = [
+  {
+    id: '1',
+    title: 'Cara Membuat Laporan Polisi Online',
+    category: 'Panduan',
+    description: 'Panduan lengkap membuat laporan polisi melalui sistem SPKT Digital',
+    content: `SPKT Digital kini memungkinkan masyarakat melaporkan tindak pidana tanpa harus datang ke kantor polisi terlebih dahulu. Layanan ini dirancang untuk mempercepat proses penerimaan laporan dan memberikan nomor referensi resmi yang dapat dilacak secara online.
+
+Langkah pertama, pastikan Anda sudah login ke akun SPKT Digital. Jika belum memiliki akun, daftar terlebih dahulu dengan melengkapi NIK dan data diri yang valid.
+
+Selanjutnya, buka menu Buat Laporan. Isi data pelapor (nama, NIK, nomor telepon), pilih jenis kasus, tanggal kejadian, lokasi, serta uraian kejadian secara detail dan jujur. Anda dapat melampirkan foto atau dokumen pendukung sebagai bukti.
+
+Setelah menekan Kirim Laporan, sistem akan menerbitkan nomor laporan resmi. Simpan nomor tersebut dan pantau perkembangannya melalui menu Laporan Saya. Petugas SPKT akan memverifikasi laporan Anda dan memberi notifikasi setiap kali status berubah.
+
+Apabila formulir belum selesai, gunakan fitur Simpan Draft agar dapat melanjutkan pengisian di lain waktu.`,
+    publishedAt: '2026-05-15',
+  },
+  {
+    id: '2',
+    title: 'Persyaratan Pembuatan SKCK',
+    category: 'Layanan',
+    description: 'Dokumen dan persyaratan yang diperlukan untuk mengajukan SKCK',
+    content: `Surat Keterangan Catatan Kepolisian (SKCK) diperlukan untuk berbagai keperluan administrasi, mulai dari melamar pekerjaan hingga pengurusan dokumen resmi.
+
+Persyaratan yang harus disiapkan:
+• Fotokopi KTP yang masih berlaku
+• Pas foto terbaru berwarna ukuran 3x4 (2 lembar)
+• Surat pengantar dari instansi/pemohon (jika diperlukan)
+• Mengisi formulir permohonan secara lengkap
+
+Pengajuan dilakukan melalui menu Layanan Surat → pilih SKCK. Unggah seluruh dokumen persyaratan, isi tujuan permohonan, dan tentukan tanggal rencana pengambilan jika tersedia.
+
+Proses verifikasi memakan waktu 3–7 hari kerja setelah dokumen dinyatakan lengkap. Anda akan menerima notifikasi ketika SKCK siap diambil di kantor polisi setempat dengan membawa identitas asli.`,
+    publishedAt: '2026-05-10',
+  },
+  {
+    id: '3',
+    title: 'Tips Keamanan Berkendara',
+    category: 'Edukasi',
+    description: 'Tips dan trik berkendara aman di jalan raya',
+    content: `Keselamatan berkendara menjadi tanggung jawab setiap pengguna jalan. Polri mengimbau masyarakat untuk selalu menerapkan prinsip defensive driving demi mengurangi risiko kecelakaan lalu lintas.
+
+Sebelum berangkat, periksa kondisi kendaraan: rem, lampu, tekanan ban, dan kelengkapan SIM/STNK. Pastikan pengemudi dalam kondisi fit — hindari berkendara saat mengantuk atau setelah mengonsumsi alkohol.
+
+Selama di jalan, patuhi rambu lalu lintas dan batas kecepatan. Gunakan helm standar SNI untuk pengendara motor dan sabuk pengaman untuk penumpang mobil. Hindari menggunakan ponsel saat mengemudi.
+
+Jika terjadi kecelakaan atau pelanggaran, segera amankan lokasi kejadian dan laporkan melalui SPKT Digital atau hubungi hotline 110 apabila ada korban yang memerlukan pertolongan darurat.`,
+    publishedAt: '2026-05-08',
+  },
+  {
+    id: '4',
+    title: 'Waspadai Modus Penipuan Online',
+    category: 'Peringatan',
+    description: 'Kenali dan hindari berbagai modus penipuan online terbaru',
+    content: `Polri mencatat peningkatan laporan penipuan online dalam beberapa bulan terakhir. Modus yang paling sering dilaporkan meliputi penipuan jual-beli barang fiktif, investasi bodong, dan pencurian identitas melalui tautan phishing.
+
+Ciri-ciri penipuan yang perlu diwaspadai:
+• Penjual menawarkan harga jauh di bawah pasaran dan meminta transfer di muka
+• Tawaran investasi dengan imbal hasil tidak masuk akal dalam waktu singkat
+• Pesan berisi tautan login bank/pajak yang meminta OTP atau password
+• Akun media sosial palsu mengaku petugas kepolisian
+
+Jangan pernah mentransfer uang ke rekening tidak dikenal sebelum barang/jasa terbukti nyata. Verifikasi identitas lawan transaksi dan laporkan dugaan penipuan segera melalui menu Buat Laporan atau Pengaduan di SPKT Digital agar dapat ditindaklanjuti petugas.`,
+    publishedAt: '2026-05-05',
+  },
+  {
+    id: '5',
+    title: 'Prosedur Kehilangan KTP dan SIM',
+    category: 'Panduan',
+    description: 'Langkah-langkah yang harus dilakukan saat kehilangan dokumen penting',
+    content: `Kehilangan KTP atau SIM harus segera ditangani agar dokumen tersebut tidak disalahgunakan pihak tidak bertanggung jawab.
+
+Langkah yang disarankan:
+1. Buat laporan kehilangan resmi melalui SPKT Digital (menu Buat Laporan, jenis kehilangan dokumen) atau datang langsung ke SPKT terdekat.
+2. Simpan nomor laporan kehilangan sebagai syarat penggantian dokumen.
+3. Ajukan surat keterangan kehilangan melalui menu Layanan Surat jika diperlukan instansi terkait.
+4. Proses penggantian KTP di Dukcapil dan SIM di Satpas Polri dengan membawa laporan kehilangan dan identitas pendukung lain.
+
+Waktu pengurusan penggantian dokumen bervariasi tergantung antrian di instansi masing-masing. Segera laporkan kehilangan maksimal 1x24 jam setelah mengetahui dokumen hilang.`,
+    publishedAt: '2026-05-01',
+  },
+] as const;
 
 function seedInfoArticles() {
   const count = (db.prepare('SELECT COUNT(*) as c FROM info_articles').get() as { c: number }).c;
@@ -313,56 +397,25 @@ function seedInfoArticles() {
      VALUES (@id, @title, @category, @description, @content, @publishedAt)`,
   );
 
-  const articles = [
-    {
-      id: '1',
-      title: 'Cara Membuat Laporan Polisi Online',
-      category: 'Panduan',
-      description: 'Panduan lengkap membuat laporan polisi melalui sistem SPKT Digital',
-      content:
-        'Login ke akun SPKT Digital, pilih menu Buat Laporan, isi data pelapor dan detail kejadian, unggah bukti jika ada, lalu kirim. Simpan nomor laporan untuk pelacakan status.',
-      publishedAt: '2026-05-15',
-    },
-    {
-      id: '2',
-      title: 'Persyaratan Pembuatan SKCK',
-      category: 'Layanan',
-      description: 'Dokumen dan persyaratan yang diperlukan untuk mengajukan SKCK',
-      content:
-        'Siapkan KTP asli, foto terbaru, dan formulir permohonan. Ajukan melalui menu Layanan Surat, pilih SKCK, isi tujuan permohonan, lalu tunggu verifikasi petugas.',
-      publishedAt: '2026-05-10',
-    },
-    {
-      id: '3',
-      title: 'Tips Keamanan Berkendara',
-      category: 'Edukasi',
-      description: 'Tips dan trik berkendara aman di jalan raya',
-      content:
-        'Patuhi rambu lalu lintas, gunakan helm/SABUK pengaman, hindari penggunaan ponsel saat berkendara, dan periksa kondisi kendaraan sebelum berangkat.',
-      publishedAt: '2026-05-08',
-    },
-    {
-      id: '4',
-      title: 'Waspadai Modus Penipuan Online',
-      category: 'Peringatan',
-      description: 'Kenali dan hindari berbagai modus penipuan online terbaru',
-      content:
-        'Jangan transfer uang ke nomor rekening tidak dikenal, verifikasi identitas penjual, waspadai tawaran investasi tidak masuk akal, dan laporkan penipuan ke SPKT Digital.',
-      publishedAt: '2026-05-05',
-    },
-    {
-      id: '5',
-      title: 'Prosedur Kehilangan KTP dan SIM',
-      category: 'Panduan',
-      description: 'Langkah-langkah yang harus dilakukan saat kehilangan dokumen penting',
-      content:
-        'Segera buat laporan kehilangan melalui SPKT Digital, bawa surat keterangan ke Dukcapil/Dispendik untuk penggantian dokumen, dan simpan nomor laporan sebagai bukti.',
-      publishedAt: '2026-05-01',
-    },
-  ];
-
-  for (const article of articles) {
+  for (const article of INFO_ARTICLE_SEED) {
     insert.run(article);
+  }
+}
+
+function syncInfoArticles() {
+  const upsert = db.prepare(
+    `INSERT INTO info_articles (id, title, category, description, content, published_at)
+     VALUES (@id, @title, @category, @description, @content, @publishedAt)
+     ON CONFLICT(id) DO UPDATE SET
+       title = excluded.title,
+       category = excluded.category,
+       description = excluded.description,
+       content = excluded.content,
+       published_at = excluded.published_at`,
+  );
+
+  for (const article of INFO_ARTICLE_SEED) {
+    upsert.run(article);
   }
 }
 
