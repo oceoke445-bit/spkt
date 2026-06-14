@@ -6,11 +6,12 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription } from './ui/alert';
+import { FileUploadZone } from './FileUploadZone';
 import { useAuth } from '@/contexts/AuthContext';
 import { caseTypes } from '@/lib/data/mockData';
 import { spktApi } from '@/lib/spktApi';
 import { SatisfactionForm } from './SatisfactionForm';
-import { CheckCircle2, Upload, MapPin, Calendar, FileText } from 'lucide-react';
+import { CheckCircle2, MapPin, Calendar, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CreateReportProps {
@@ -35,12 +36,6 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFormData(prev => ({ ...prev, files: Array.from(e.target.files!) }));
-    }
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -285,35 +280,11 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
             <CardDescription className="text-blue-200">Foto, video, atau dokumen pendukung (opsional)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="border-2 border-dashed border-blue-500/50 rounded-lg p-8 text-center hover:border-blue-400 transition-colors bg-blue-800/30">
-              <Upload className="w-10 h-10 text-blue-400 mx-auto mb-3" />
-              <Label htmlFor="files" className="cursor-pointer">
-                <span className="text-sm text-blue-200">
-                  Klik untuk upload atau drag & drop
-                </span>
-                <p className="text-xs text-blue-300 mt-1">
-                  PNG, JPG, PDF hingga 10MB (Maksimal 5 file)
-                </p>
-              </Label>
-              <Input
-                id="files"
-                type="file"
-                multiple
-                accept="image/*,.pdf"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
-            {formData.files.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {formData.files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-blue-800/50 rounded border border-blue-600/50">
-                    <span className="text-sm text-blue-100">{file.name}</span>
-                    <span className="text-xs text-blue-300">{(file.size / 1024).toFixed(1)} KB</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <FileUploadZone
+              files={formData.files}
+              onFilesChange={(files) => setFormData((prev) => ({ ...prev, files }))}
+              subHint="PNG, JPG, PDF hingga 10MB (Maksimal 5 file)"
+            />
           </CardContent>
         </Card>
 

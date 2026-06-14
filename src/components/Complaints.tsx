@@ -16,13 +16,13 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  Upload,
   FileText,
   User,
   Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SatisfactionForm } from './SatisfactionForm';
+import { FileUploadZone } from './FileUploadZone';
 import {
   Complaint,
   ComplaintCategory,
@@ -84,12 +84,6 @@ export const Complaints: React.FC = () => {
       });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFormData(prev => ({ ...prev, files: Array.from(e.target.files!) }));
     }
   };
 
@@ -289,32 +283,14 @@ export const Complaints: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-blue-200" htmlFor="files">Lampiran (Opsional)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <Label htmlFor="files" className="text-blue-200 cursor-pointer">
-                  <span className="text-sm text-blue-200">Upload bukti pendukung</span>
-                  <p className="text-xs text-blue-300 mt-1">PNG, JPG, PDF maksimal 5MB</p>
-                </Label>
-                <Input
-                  id="files"
-                  type="file"
-                  multiple
-                  accept="image/*,.pdf"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </div>
-              {formData.files.length > 0 && (
-                <div className="space-y-2">
-                  {formData.files.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-blue-800/50 border border-blue-600/50 rounded">
-                      <span className="text-sm text-blue-100">{file.name}</span>
-                      <span className="text-xs text-blue-300">{(file.size / 1024).toFixed(1)} KB</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <Label className="text-blue-200">Lampiran (Opsional)</Label>
+              <FileUploadZone
+                files={formData.files}
+                onFilesChange={(files) => setFormData((prev) => ({ ...prev, files }))}
+                hint="Upload bukti pendukung"
+                subHint="PNG, JPG, PDF maksimal 5MB"
+                maxSizeMb={5}
+              />
             </div>
 
             <div className="flex gap-3 pt-4">

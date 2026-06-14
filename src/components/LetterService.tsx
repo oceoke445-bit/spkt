@@ -11,7 +11,8 @@ import { letterTypes, getStatusBadgeColor, getStatusLabel } from '@/lib/data/moc
 import { spktApi } from '@/lib/spktApi';
 import { useLetters } from '@/hooks/useLetters';
 import { SatisfactionForm } from './SatisfactionForm';
-import { Mail, Calendar, FileText, CheckCircle2, ArrowLeft, Upload } from 'lucide-react';
+import { FileUploadZone } from './FileUploadZone';
+import { Mail, Calendar, FileText, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { IconBadge, letterTypeIcons } from './iconStyles';
 import { toast } from 'sonner';
 
@@ -71,12 +72,6 @@ export const LetterService: React.FC = () => {
       });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFormData(prev => ({ ...prev, documents: Array.from(e.target.files!) }));
     }
   };
 
@@ -275,31 +270,13 @@ export const LetterService: React.FC = () => {
               {/* Document Upload */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-white">Dokumen Pendukung</h3>
-                <div className="border-2 border-dashed border-blue-500/50 rounded-lg p-6 text-center bg-blue-800/30 hover:border-blue-400 transition-colors">
-                  <Upload className="w-10 h-10 text-blue-400 mx-auto mb-3" />
-                  <Label htmlFor="documents" className="cursor-pointer">
-                    <span className="text-sm text-blue-200">Upload KTP, KK, atau dokumen lainnya</span>
-                    <p className="text-xs text-blue-300 mt-1">PDF atau gambar, maksimal 5MB</p>
-                  </Label>
-                  <Input
-                    id="documents"
-                    type="file"
-                    multiple
-                    accept="image/*,.pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </div>
-                {formData.documents.length > 0 && (
-                  <div className="space-y-2">
-                    {formData.documents.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-blue-800/50 rounded border border-blue-600/50">
-                        <span className="text-sm text-blue-100">{file.name}</span>
-                        <span className="text-xs text-blue-300">{(file.size / 1024).toFixed(1)} KB</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <FileUploadZone
+                  files={formData.documents}
+                  onFilesChange={(documents) => setFormData((prev) => ({ ...prev, documents }))}
+                  hint="Upload KTP, KK, atau dokumen lainnya"
+                  subHint="PDF atau gambar, maksimal 5MB"
+                  maxSizeMb={5}
+                />
               </div>
 
               {/* Requirements Info */}
