@@ -259,8 +259,20 @@ export function listLetters(nik?: string): LetterRequest[] {
   sql += ' ORDER BY created_at DESC';
 
   const rows = db.prepare(sql).all(params) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
-    id: row.id as string,
+  return rows.map(hydrateLetter);
+}
+
+function loadLetterAttachments(letterId: string): string[] {
+  const rows = db
+    .prepare('SELECT filename FROM letter_attachments WHERE letter_id = ?')
+    .all(letterId) as Array<{ filename: string }>;
+  return rows.map((r) => r.filename);
+}
+
+function hydrateLetter(row: Record<string, unknown>): LetterRequest {
+  const id = row.id as string;
+  return {
+    id,
     requestNumber: row.request_number as string,
     requesterName: row.requester_name as string,
     requesterNIK: row.requester_nik as string,
@@ -269,7 +281,47 @@ export function listLetters(nik?: string): LetterRequest[] {
     status: row.status as LetterStatus,
     createdAt: row.created_at as string,
     pickupDate: row.pickup_date as string | undefined,
-  }));
+    attachmentFiles: loadLetterAttachments(id),
+  };
+}
+
+export function getLetterById(id: string): LetterRequest | null {
+  ensureDbReady();
+  const row = db.prepare('SELECT * FROM letter_requests WHERE id = ?').get(id) as
+    | Record<string, unknown>
+    | undefined;
+  return row ? hydrateLetter(row) : null;
+}
+
+export interface UpdateLetterInput {
+  status?: LetterStatus;
+  pickupDate?: string | null;
+}
+
+export function updateLetter(id: string, input: UpdateLetterInput): LetterRequest | null {
+  ensureDbReady();
+  if (!getLetterById(id)) {
+    return null;
+  }
+
+  const updates: string[] = [];
+  const params: Record<string, string | null> = { id };
+
+  if (input.status !== undefined) {
+    updates.push('status = @status');
+    params.status = input.status;
+  }
+  if (input.pickupDate !== undefined) {
+    updates.push('pickup_date = @pickupDate');
+    params.pickupDate = input.pickupDate ?? null;
+  }
+
+  if (updates.length === 0) {
+    return getLetterById(id);
+  }
+
+  db.prepare(`UPDATE letter_requests SET ${updates.join(', ')} WHERE id = @id`).run(params);
+  return getLetterById(id);
 }
 
 function generateLetterNumber(letterTypeId: string): string {
@@ -285,6 +337,7 @@ export interface CreateLetterInput {
   letterTypeName: string;
   purpose: string;
   pickupDate?: string;
+  attachmentFiles?: string[];
 }
 
 export function createLetter(input: CreateLetterInput): LetterRequest {
@@ -313,7 +366,16 @@ export function createLetter(input: CreateLetterInput): LetterRequest {
     createdAt: ts,
   });
 
-  return listLetters().find((l) => l.id === id)!;
+  if (input.attachmentFiles?.length) {
+    const insertAttachment = db.prepare(
+      'INSERT INTO letter_attachments (letter_id, filename) VALUES (@letterId, @filename)',
+    );
+    for (const filename of input.attachmentFiles) {
+      insertAttachment.run({ letterId: id, filename });
+    }
+  }
+
+  return getLetterById(id)!;
 }
 
 export function listComplaints(nik?: string): Complaint[] {
@@ -328,8 +390,20 @@ export function listComplaints(nik?: string): Complaint[] {
   sql += ' ORDER BY created_at DESC';
 
   const rows = db.prepare(sql).all(params) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
-    id: row.id as string,
+  return rows.map(hydrateComplaint);
+}
+
+function loadComplaintFiles(complaintId: string): string[] {
+  const rows = db
+    .prepare('SELECT filename FROM complaint_files WHERE complaint_id = ?')
+    .all(complaintId) as Array<{ filename: string }>;
+  return rows.map((r) => r.filename);
+}
+
+function hydrateComplaint(row: Record<string, unknown>): Complaint {
+  const id = row.id as string;
+  return {
+    id,
     complaintNumber: row.complaint_number as string,
     submitterName: row.submitter_name as string,
     submitterNik: row.submitter_nik as string | undefined,
@@ -341,7 +415,45 @@ export function listComplaints(nik?: string): Complaint[] {
     updatedAt: row.updated_at as string,
     response: row.response as string | undefined,
     responseDate: row.response_date as string | undefined,
-  }));
+    files: loadComplaintFiles(id),
+  };
+}
+
+export function getComplaintById(id: string): Complaint | null {
+  ensureDbReady();
+  const row = db.prepare('SELECT * FROM complaints WHERE id = ?').get(id) as
+    | Record<string, unknown>
+    | undefined;
+  return row ? hydrateComplaint(row) : null;
+}
+
+export interface UpdateComplaintInput {
+  status?: ComplaintStatus;
+  response?: string;
+}
+
+export function updateComplaint(id: string, input: UpdateComplaintInput): Complaint | null {
+  ensureDbReady();
+  if (!getComplaintById(id)) {
+    return null;
+  }
+
+  const updates: string[] = ['updated_at = @updatedAt'];
+  const params: Record<string, string | null> = { id, updatedAt: nowIso() };
+
+  if (input.status !== undefined) {
+    updates.push('status = @status');
+    params.status = input.status;
+  }
+  if (input.response !== undefined) {
+    updates.push('response = @response');
+    params.response = input.response;
+    updates.push('response_date = @responseDate');
+    params.responseDate = input.response ? nowIso() : null;
+  }
+
+  db.prepare(`UPDATE complaints SET ${updates.join(', ')} WHERE id = @id`).run(params);
+  return getComplaintById(id);
 }
 
 function generateComplaintNumber(): string {
@@ -355,6 +467,7 @@ export interface CreateComplaintInput {
   category: ComplaintCategory;
   subject: string;
   description: string;
+  files?: string[];
 }
 
 export function createComplaint(input: CreateComplaintInput): Complaint {
@@ -384,7 +497,16 @@ export function createComplaint(input: CreateComplaintInput): Complaint {
     updatedAt: ts,
   });
 
-  return listComplaints().find((c) => c.id === id)!;
+  if (input.files?.length) {
+    const insertFile = db.prepare(
+      'INSERT INTO complaint_files (complaint_id, filename) VALUES (@complaintId, @filename)',
+    );
+    for (const filename of input.files) {
+      insertFile.run({ complaintId: id, filename });
+    }
+  }
+
+  return getComplaintById(id)!;
 }
 
 export function listOfficers(): Officer[] {

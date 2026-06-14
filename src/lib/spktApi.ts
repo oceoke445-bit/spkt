@@ -4,6 +4,8 @@ import type {
   Complaint,
   Officer,
   ReportStatus,
+  LetterStatus,
+  ComplaintStatus,
   ComplaintCategory,
 } from '@/lib/types/spkt';
 
@@ -70,6 +72,12 @@ export interface CreateLetterPayload {
   letterTypeName: string;
   purpose: string;
   pickupDate?: string;
+  attachmentFiles?: string[];
+}
+
+export interface UpdateLetterPayload {
+  status?: LetterStatus;
+  pickupDate?: string | null;
 }
 
 export interface CreateComplaintPayload {
@@ -79,6 +87,12 @@ export interface CreateComplaintPayload {
   category: ComplaintCategory;
   subject: string;
   description: string;
+  files?: string[];
+}
+
+export interface UpdateComplaintPayload {
+  status?: ComplaintStatus;
+  response?: string;
 }
 
 export const spktApi = {
@@ -128,6 +142,14 @@ export const spktApi = {
       body: JSON.stringify(payload),
     }),
 
+  getLetter: (id: string) => request<{ letter: LetterRequest }>(`/letters/${id}`),
+
+  updateLetter: (id: string, payload: UpdateLetterPayload) =>
+    request<{ letter: LetterRequest }>(`/letters/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   getComplaints: (nik?: string) => {
     const qs = nik ? `?nik=${encodeURIComponent(nik)}` : '';
     return request<{ complaints: Complaint[] }>(`/complaints${qs}`);
@@ -136,6 +158,14 @@ export const spktApi = {
   createComplaint: (payload: CreateComplaintPayload) =>
     request<{ complaint: Complaint }>('/complaints', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getComplaint: (id: string) => request<{ complaint: Complaint }>(`/complaints/${id}`),
+
+  updateComplaint: (id: string, payload: UpdateComplaintPayload) =>
+    request<{ complaint: Complaint }>(`/complaints/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 

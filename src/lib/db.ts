@@ -172,6 +172,20 @@ function initAppTables() {
     CREATE INDEX IF NOT EXISTS idx_letters_nik ON letter_requests(requester_nik);
     CREATE INDEX IF NOT EXISTS idx_complaints_nik ON complaints(submitter_nik);
 
+    CREATE TABLE IF NOT EXISTS letter_attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      letter_id TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      FOREIGN KEY (letter_id) REFERENCES letter_requests(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS complaint_files (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      complaint_id TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,

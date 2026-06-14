@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -18,7 +18,9 @@ import {
   Clock,
   FileText,
   User,
-  Calendar
+  Calendar,
+  Save,
+  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SatisfactionForm } from './SatisfactionForm';
@@ -36,19 +38,32 @@ import { useComplaints } from '@/hooks/useComplaints';
 
 export const Complaints: React.FC = () => {
   const { user } = useAuth();
-  const { complaints: userComplaints, loading, refresh } = useComplaints(user?.nik);
+  const isAdmin = user?.role === 'admin';
+  const nikFilter = isAdmin ? undefined : user?.nik;
+
+  const { complaints: userComplaints, loading, refresh } = useComplaints(nikFilter);
   const [showForm, setShowForm] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSatisfaction, setShowSatisfaction] = useState(false);
   const [lastReference, setLastReference] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [adminStatus, setAdminStatus] = useState<ComplaintStatus>('submitted');
+  const [adminResponse, setAdminResponse] = useState('');
+  const [adminSaving, setAdminSaving] = useState(false);
   const [formData, setFormData] = useState({
     category: '' as ComplaintCategory | '',
     subject: '',
     description: '',
     files: [] as File[]
   });
+
+  useEffect(() => {
+    if (selectedComplaint) {
+      setAdminStatus(selectedComplaint.status);
+      setAdminResponse(selectedComplaint.response ?? '');
+    }
+  }, [selectedComplaint]);
 
   const filteredComplaints = userComplaints.filter(complaint =>
     complaint.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -61,6 +76,12 @@ export const Complaints: React.FC = () => {
 
     setSubmitting(true);
     try {
+      let uploadedFiles: string[] = [];
+      if (formData.files.length > 0) {
+        const { files } = await spktApi.uploadFiles(formData.files);
+        uploadedFiles = files.map((f) => f.storedName);
+      }
+
       const { complaint } = await spktApi.createComplaint({
         submitterUserId: user?.id,
         submitterName: user?.name || 'Pengguna',
@@ -68,6 +89,7 @@ export const Complaints: React.FC = () => {
         category: formData.category,
         subject: formData.subject,
         description: formData.description,
+        files: uploadedFiles,
       });
 
       setLastReference(complaint.complaintNumber);
@@ -84,6 +106,27 @@ export const Complaints: React.FC = () => {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleAdminSave = async () => {
+    if (!selectedComplaint) return;
+
+    setAdminSaving(true);
+    try {
+      const { complaint } = await spktApi.updateComplaint(selectedComplaint.id, {
+        status: adminStatus,
+        response: adminResponse.trim() || undefined,
+      });
+      await refresh();
+      setSelectedComplaint(complaint);
+      toast.success('Pengaduan diperbarui');
+    } catch (err) {
+      toast.error('Gagal memperbarui pengaduan', {
+        description: err instanceof Error ? err.message : 'Terjadi kesalahan',
+      });
+    } finally {
+      setAdminSaving(false);
     }
   };
 
@@ -114,8 +157,11 @@ export const Complaints: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Pengaduan</h1>
-          <p className="text-blue-200 mt-1">Sampaikan keluhan dan saran Anda</p>
+          <p className="text-blue-200 mt-1">
+            {isAdmin ? 'Kelola dan tanggapi pengaduan masyarakat' : 'Sampaikan keluhan dan saran Anda'}
+          </p>
         </div>
+        {!isAdmin && (
         <Button
           onClick={() => setShowForm(true)}
           className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md [&_svg]:text-sky-200"
@@ -123,6 +169,7 @@ export const Complaints: React.FC = () => {
           <Send className="w-4 h-4 mr-2" />
           Buat Pengaduan
         </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -162,8 +209,10 @@ export const Complaints: React.FC = () => {
       {/* Complaint List */}
       <Card className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-white">Daftar Pengaduan</CardTitle>
-          <CardDescription className="text-blue-200">Riwayat pengaduan yang telah diajukan</CardDescription>
+          <CardTitle className="text-white">{isAdmin ? 'Semua Pengaduan' : 'Daftar Pengaduan'}</CardTitle>
+          <CardDescription className="text-blue-200">
+            {isAdmin ? 'Tinjau dan tanggapi pengaduan dari masyarakat' : 'Riwayat pengaduan yang telah diajukan'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredComplaints.length === 0 ? (
@@ -200,6 +249,12 @@ export const Complaints: React.FC = () => {
                       <Calendar className="w-3 h-3 text-cyan-300" />
                       {new Date(complaint.createdAt).toLocaleDateString('id-ID')}
                     </span>
+                    {isAdmin && complaint.submitterName && (
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3 text-cyan-300" />
+                        {complaint.submitterName}
+                      </span>
+                    )}
                     <Badge className="bg-blue-500/30 text-blue-200 border-blue-400/50">
                       {complaintCategories.find(c => c.value === complaint.category)?.label}
                     </Badge>
@@ -361,22 +416,68 @@ export const Complaints: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Files */}
                 {selectedComplaint.files && selectedComplaint.files.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-white mb-3">Lampiran</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedComplaint.files.map((file, index) => (
-                        <div key={index} className="border border-blue-500/40 rounded-lg p-3 flex items-center gap-2 bg-blue-900/40">
-                          <FileText className="w-4 h-4 text-blue-200" />
-                          <span className="text-sm text-blue-100">{file}</span>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedComplaint.files.map((file) => (
+                        <a
+                          key={file}
+                          href={spktApi.getFileUrl(file)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="border border-blue-500/40 rounded-lg p-3 flex items-center gap-2 bg-blue-900/40 text-blue-100 hover:text-cyan-200"
+                        >
+                          <FileText className="w-4 h-4 text-blue-200 shrink-0" />
+                          <span className="text-sm truncate">{file}</span>
+                          <ExternalLink className="w-3 h-3 ml-auto shrink-0" />
+                        </a>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Response */}
+                {/* Admin response panel */}
+                {isAdmin && (
+                  <div className="border border-amber-500/40 rounded-lg p-4 bg-amber-900/20 space-y-4">
+                    <h3 className="font-semibold text-amber-200">Tanggapan Admin</h3>
+                    <div className="space-y-2">
+                      <Label className="text-blue-200">Status</Label>
+                      <Select value={adminStatus} onValueChange={(v: ComplaintStatus) => setAdminStatus(v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="submitted">Diajukan</SelectItem>
+                          <SelectItem value="reviewing">Ditinjau</SelectItem>
+                          <SelectItem value="processing">Diproses</SelectItem>
+                          <SelectItem value="resolved">Selesai</SelectItem>
+                          <SelectItem value="closed">Ditutup</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-blue-200">Tanggapan</Label>
+                      <Textarea
+                        value={adminResponse}
+                        onChange={(e) => setAdminResponse(e.target.value)}
+                        placeholder="Tulis tanggapan untuk pengadu..."
+                        rows={4}
+                        className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleAdminSave}
+                      disabled={adminSaving}
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Simpan Tanggapan
+                    </Button>
+                  </div>
+                )}
+
+                {/* Response (user view) */}
                 {selectedComplaint.response && (
                   <div className="bg-emerald-900/40 border border-emerald-500/40 rounded-lg p-4">
                     <div className="flex items-start gap-3">

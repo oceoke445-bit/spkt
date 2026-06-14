@@ -68,6 +68,7 @@ export interface LetterRequest {
   status: LetterStatus;
   createdAt: string;
   pickupDate?: string;
+  attachmentFiles?: string[];
 }
 
 export interface Complaint {
