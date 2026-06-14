@@ -103,7 +103,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
   if (submitted) {
     return (
       <>
-        <div className="max-w-2xl mx-auto">
+        <div className="w-full">
           <Card className="border-green-500/50 bg-gradient-to-br from-green-900/80 to-green-800/80 shadow-lg backdrop-blur">
             <CardContent className="p-8 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
@@ -146,7 +146,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-white">Buat Laporan</h1>
         <p className="text-blue-200 mt-1">Laporkan kejadian yang Anda alami</p>
