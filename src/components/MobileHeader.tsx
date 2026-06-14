@@ -1,8 +1,9 @@
 import React from 'react';
-import { Menu, ShieldCheck } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from './ui/button';
 import { getViewLabel } from './Sidebar';
 import { NotificationBell } from './NotificationBell';
+import { SpktLogo } from './SpktLogo';
 
 interface MobileHeaderProps {
   currentView: string;
@@ -24,11 +25,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ currentView, onMenuO
         >
           <Menu className="w-5 h-5" />
         </Button>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
-            <p className="text-sm font-semibold text-white truncate">SPKT Digital</p>
-          </div>
+        <div className="min-w-0 flex-1">
+          <SpktLogo className="max-h-8 w-auto max-w-[96px]" />
           <p className="text-xs text-blue-300 truncate">{getViewLabel(currentView)}</p>
         </div>
       </div>

@@ -11,7 +11,6 @@ import {
   Info,
   Settings,
   LogOut,
-  ShieldCheck,
   Users,
   BarChart3,
   Inbox,
@@ -19,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { iconAccent } from './iconStyles';
+import { SpktLogo } from './SpktLogo';
 
 interface MenuItem {
   icon: LucideIcon;
@@ -79,19 +79,11 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({
 
   return (
     <div className={cn('flex flex-col h-full bg-gradient-to-b from-blue-950/95 via-blue-900/95 to-blue-950/95', className)}>
-      <div className="p-4 sm:p-6 border-b border-blue-500/30 bg-gradient-to-br from-blue-900/60 to-blue-800/60 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-xl border border-blue-400/30 shrink-0">
-            <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-sky-200" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-bold text-base sm:text-lg text-white truncate">SPKT Digital</h1>
-            <p className="text-xs text-blue-200">Polisi Indonesia</p>
-          </div>
-        </div>
+      <div className="px-3 pt-2 pb-2 border-b border-blue-500/30 bg-gradient-to-br from-blue-900/60 to-blue-800/60 backdrop-blur">
+        <SpktLogo className="max-w-[140px] sm:max-w-[155px] mx-auto" />
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full">
+      <div className="flex-1 overflow-y-auto py-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full">
         <nav className="space-y-1 px-3">
           {filteredMenuItems.map((item) => {
             const Icon = item.icon;

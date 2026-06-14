@@ -5,8 +5,9 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
-import { ShieldCheck, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { RegisterPage } from './RegisterPage';
+import { SpktLogo } from './SpktLogo';
 
 export const LoginPage: React.FC = () => {
   const [showRegister, setShowRegister] = useState(false);
@@ -50,12 +51,9 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-4 shadow-2xl ring-4 ring-blue-400/30">
-            <ShieldCheck className="w-12 h-12 text-sky-200" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">SPKT Digital</h1>
-          <p className="text-blue-200">Sistem Pelayanan Kepolisian Terpadu</p>
+        <div className="text-center mb-4 space-y-1">
+          <SpktLogo priority className="mx-auto max-w-[170px] sm:max-w-[190px]" />
+          <p className="text-blue-200 text-sm">Sistem Pelayanan Kepolisian Terpadu</p>
         </div>
 
         <Card className="shadow-2xl border-2 border-blue-500 bg-gradient-to-br from-blue-900 to-blue-800">

@@ -7,7 +7,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
-import { ShieldCheck, Mail, Lock, AlertCircle, User, Phone, CreditCard } from 'lucide-react';
+import { Mail, Lock, AlertCircle, User, Phone, CreditCard } from 'lucide-react';
+import { SpktLogo } from './SpktLogo';
 
 interface RegisterPageProps {
   onBackToLogin: () => void;
@@ -59,11 +60,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onBackToLogin }) => 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-3 shadow-2xl">
-            <ShieldCheck className="w-9 h-9 text-sky-200" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">Daftar Akun</h1>
+        <div className="text-center mb-4 space-y-1">
+          <SpktLogo className="mx-auto max-w-[160px]" />
           <p className="text-blue-200 text-sm">Buat akun masyarakat SPKT Digital</p>
         </div>
 
