@@ -62,7 +62,10 @@ export const AdminCSI: React.FC = () => {
         <CardContent className="p-8 text-center">
           <p className="text-red-300 mb-4">{error}</p>
           <p className="text-blue-200 text-sm mb-4">Pastikan server backend berjalan (npm run dev:server)</p>
-          <Button onClick={loadData} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            onClick={loadData}
+            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white shadow-md [&_svg]:text-sky-100"
+          >
             <RefreshCw className="w-4 h-4 mr-2" />
             Coba Lagi
           </Button>
@@ -81,12 +84,11 @@ export const AdminCSI: React.FC = () => {
           <p className="text-blue-200 mt-1">Rekap indeks kepuasan berdasarkan metode Customer Satisfaction Index</p>
         </div>
         <Button
-          variant="outline"
           onClick={loadData}
-          className="w-full sm:w-auto border-blue-500/50 text-blue-200 hover:bg-blue-800/50"
+          className="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white shadow-md border border-sky-400/50 [&_svg]:text-sky-100"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh Data
+          Muat Ulang Data
         </Button>
       </div>
 
