@@ -16,7 +16,7 @@ import { CsiPromptButton } from './CsiPromptButton';
 import { useCsiEligibility } from '@/hooks/useCsiEligibility';
 import { FileUploadZone } from './FileUploadZone';
 import { DatePickerField } from '@/components/DatePickerField';
-import { Mail, FileText, CheckCircle2, ArrowLeft, User, Save, ExternalLink } from 'lucide-react';
+import { Mail, FileText, CheckCircle2, ArrowLeft, User, Save, Eye } from 'lucide-react';
 import { IconBadge, letterTypeIcons } from './iconStyles';
 import { toast } from 'sonner';
 import type { LetterRequest, LetterStatus } from '@/lib/types/spkt';
@@ -168,11 +168,10 @@ export const LetterService: React.FC = () => {
                 {userLetters.map((letter) => (
                   <div
                     key={letter.id}
-                    className="border border-blue-600/50 rounded-xl p-4 hover:bg-blue-700/30 hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur cursor-pointer"
-                    onClick={() => setManagingLetter(letter)}
+                    className="border border-blue-600/50 rounded-xl p-4 hover:bg-blue-700/30 hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur"
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
+                    <div className="flex items-start justify-between mb-2 gap-3">
+                      <div className="min-w-0 flex-1">
                         <h4 className="font-medium text-white">{letter.requestNumber}</h4>
                         <p className="text-sm text-blue-200">{letter.letterType}</p>
                         <p className="text-xs text-blue-300 mt-1 flex items-center gap-1">
@@ -180,11 +179,26 @@ export const LetterService: React.FC = () => {
                           {letter.requesterName} · NIK {letter.requesterNIK}
                         </p>
                       </div>
-                      <span className={`px-3 py-1 text-xs rounded-full border ${getStatusBadgeColor(letter.status)}`}>
+                      <span className={`px-3 py-1 text-xs rounded-full border shrink-0 ${getStatusBadgeColor(letter.status)}`}>
                         {getStatusLabel(letter.status)}
                       </span>
                     </div>
-                    <p className="text-sm text-blue-200 truncate">Keperluan: {letter.purpose}</p>
+                    <p className="text-sm text-blue-200 truncate mb-3">Keperluan: {letter.purpose}</p>
+                    <div className="pt-3 border-t border-blue-600/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <p className="text-xs text-blue-300">
+                        {letter.attachmentFiles?.length
+                          ? `${letter.attachmentFiles.length} dokumen dilampirkan`
+                          : 'Tidak ada dokumen'}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                        onClick={() => setManagingLetter(letter)}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        Review
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -490,17 +504,24 @@ export const LetterService: React.FC = () => {
                   <Label className="text-blue-200">Dokumen Pendukung</Label>
                   <div className="mt-2 space-y-2">
                     {managingLetter.attachmentFiles.map((file) => (
-                      <a
+                      <div
                         key={file}
-                        href={spktApi.getFileUrl(file)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200 border border-blue-500/40 rounded-lg p-2 bg-blue-900/40"
+                        className="flex items-center gap-2 text-sm border border-blue-500/40 rounded-lg p-2 bg-blue-900/40"
                       >
-                        <FileText className="w-4 h-4" />
-                        {file}
-                        <ExternalLink className="w-3 h-3 ml-auto" />
-                      </a>
+                        <FileText className="w-4 h-4 text-blue-200 shrink-0" />
+                        <span className="text-blue-100 truncate flex-1">{file}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 border-blue-400/50 text-cyan-200 hover:bg-blue-800/60"
+                          asChild
+                        >
+                          <a href={spktApi.getFileUrl(file)} target="_blank" rel="noopener noreferrer">
+                            <Eye className="w-3 h-3 mr-1" />
+                            Review
+                          </a>
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </div>

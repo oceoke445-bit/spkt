@@ -283,6 +283,7 @@ export const spktApi = {
         completionRate: number;
         reportsToday: number;
         avgCompletionDays: number;
+        activeUsers: number;
         monthlyTrend: Array<{ month: string; laporan: number; selesai: number }>;
         responseTimeBuckets: Array<{ category: string; count: number }>;
         caseDistribution: Array<{ name: string; value: number }>;

@@ -250,7 +250,7 @@ export const AdminDashboard: React.FC = () => {
           <CardDescription className="text-blue-200">Kondisi operasional SPKT Digital</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
               <div>
@@ -269,14 +269,7 @@ export const AdminDashboard: React.FC = () => {
               <Users className="w-8 h-8 text-sky-400" />
               <div>
                 <p className="text-sm text-blue-200">Active Users</p>
-                <p className="font-semibold text-sky-300">247</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4 bg-violet-500/10 rounded-lg border border-violet-500/30">
-              <TrendingUp className="w-8 h-8 text-violet-400" />
-              <div>
-                <p className="text-sm text-blue-200">Uptime</p>
-                <p className="font-semibold text-violet-300">99.9%</p>
+                <p className="font-semibold text-sky-300">{stats?.activeUsers ?? 0}</p>
               </div>
             </div>
           </div>

@@ -11,7 +11,7 @@ import { spktApi } from '@/lib/spktApi';
 import { spktDialogClass } from '@/lib/spktDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReports } from '@/hooks/useReports';
-import { Inbox, Clock, CheckCircle2, AlertCircle, FileText, User, MapPin, Calendar } from 'lucide-react';
+import { Inbox, Clock, CheckCircle2, AlertCircle, FileText, User, MapPin, Calendar, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const OfficerDashboard: React.FC = () => {
@@ -197,8 +197,7 @@ export const OfficerDashboard: React.FC = () => {
             actionableReports.map((report) => (
               <div
                 key={report.id}
-                className="border border-blue-600/50 rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur cursor-pointer"
-                onClick={() => setSelectedReport(report)}
+                className="border border-blue-600/50 rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                   <div>
@@ -223,24 +222,23 @@ export const OfficerDashboard: React.FC = () => {
                     {new Date(report.incidentDate).toLocaleDateString('id-ID')}
                   </div>
                 </div>
-                {report.assignedTo && (
-                  <div className="mt-3 pt-3 border-t border-blue-600/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="mt-3 pt-3 border-t border-blue-600/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  {report.assignedTo ? (
                     <p className="text-xs text-blue-300">
                       Ditugaskan ke: <span className="font-medium">{report.assignedTo}</span>
                     </p>
-                    <Button
-                      size="sm"
-                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedReport(report);
-                      }}
-                    >
-                      <FileText className="w-3 h-3 mr-1" />
-                      Detail
-                    </Button>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-blue-300">Belum ditugaskan</p>
+                  )}
+                  <Button
+                    size="sm"
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                    onClick={() => setSelectedReport(report)}
+                  >
+                    <Eye className="w-3 h-3 mr-1" />
+                    Lihat Detail
+                  </Button>
+                </div>
               </div>
             ))
             )}
@@ -327,16 +325,24 @@ export const OfficerDashboard: React.FC = () => {
                     <h3 className="font-semibold text-white mb-3">Bukti Pendukung</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {selectedReport.evidenceFiles.map((file) => (
-                        <a
+                        <div
                           key={file}
-                          href={spktApi.getFileUrl(file)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="border border-blue-500/40 rounded-lg p-3 flex items-center gap-2 bg-blue-900/40 text-blue-100 hover:text-cyan-200"
+                          className="border border-blue-500/40 rounded-lg p-3 flex items-center gap-2 bg-blue-900/40"
                         >
                           <FileText className="w-4 h-4 text-blue-200 shrink-0" />
-                          <span className="text-sm truncate">{file}</span>
-                        </a>
+                          <span className="text-sm truncate text-blue-100 flex-1">{file}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0 border-blue-400/50 text-cyan-200 hover:bg-blue-800/60"
+                            asChild
+                          >
+                            <a href={spktApi.getFileUrl(file)} target="_blank" rel="noopener noreferrer">
+                              <Eye className="w-3 h-3 mr-1" />
+                              Review
+                            </a>
+                          </Button>
+                        </div>
                       ))}
                     </div>
                   </div>

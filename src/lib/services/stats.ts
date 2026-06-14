@@ -7,6 +7,7 @@ export interface AdminStats {
   completionRate: number;
   reportsToday: number;
   avgCompletionDays: number;
+  activeUsers: number;
   monthlyTrend: Array<{ month: string; laporan: number; selesai: number }>;
   responseTimeBuckets: Array<{ category: string; count: number }>;
   caseDistribution: Array<{ name: string; value: number }>;
@@ -100,6 +101,17 @@ export function getAdminStats(): AdminStats {
     .prepare('SELECT case_type, COUNT(*) as c FROM reports GROUP BY case_type ORDER BY c DESC')
     .all() as Array<{ case_type: string; c: number }>;
 
+  const activeUsers = (
+    db
+      .prepare(
+        `SELECT COUNT(DISTINCT s.user_id) as c
+         FROM sessions s
+         JOIN users u ON u.id = s.user_id
+         WHERE s.expires_at > ? AND u.active = 1`,
+      )
+      .get(new Date().toISOString()) as { c: number }
+  ).c;
+
   return {
     totalReports,
     completedReports,
@@ -107,6 +119,7 @@ export function getAdminStats(): AdminStats {
     completionRate,
     reportsToday,
     avgCompletionDays,
+    activeUsers,
     monthlyTrend,
     responseTimeBuckets,
     caseDistribution: caseRows.map((r) => ({ name: r.case_type, value: r.c })),
