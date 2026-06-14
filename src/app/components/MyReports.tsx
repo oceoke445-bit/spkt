@@ -34,7 +34,7 @@ export const MyReports: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Laporan Saya</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Laporan Saya</h1>
         <p className="text-blue-200 mt-1">Kelola dan lacak status laporan Anda</p>
       </div>
 
@@ -51,7 +51,7 @@ export const MyReports: React.FC = () => {
                 className="pl-10 bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400 focus:border-blue-400"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={filterStatus === 'all' ? 'default' : 'outline'}
                 size="sm"
@@ -101,7 +101,7 @@ export const MyReports: React.FC = () => {
                   className="border border-blue-600/50 rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur cursor-pointer"
                   onClick={() => setSelectedReport(report)}
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                     <div>
                       <h3 className="font-semibold text-white">{report.reportNumber}</h3>
                       <p className="text-sm text-blue-100 font-medium mt-1">{report.caseType}</p>
@@ -110,7 +110,7 @@ export const MyReports: React.FC = () => {
                       {getStatusLabel(report.status)}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center gap-2 text-blue-200">
                       <Calendar className="w-4 h-4 text-blue-400" />
                       {new Date(report.incidentDate).toLocaleDateString('id-ID')}
@@ -120,7 +120,7 @@ export const MyReports: React.FC = () => {
                       {report.location.substring(0, 30)}...
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-blue-500/50 flex items-center justify-between">
+                  <div className="mt-3 pt-3 border-t border-blue-500/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span className="text-xs text-blue-300">
                       Dibuat: {new Date(report.createdAt).toLocaleDateString('id-ID', {
                         day: 'numeric',
@@ -130,7 +130,7 @@ export const MyReports: React.FC = () => {
                     </span>
                     <Button
                       size="sm"
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
                     >
                       <FileText className="w-3 h-3 mr-1" />
                       Detail
@@ -145,7 +145,7 @@ export const MyReports: React.FC = () => {
 
       {/* Detail Modal */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
+        <DialogContent className="w-[calc(100%-2rem)] sm:max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
           {selectedReport && (
             <>
               <DialogHeader>
@@ -243,7 +243,7 @@ export const MyReports: React.FC = () => {
                       <label className="text-sm text-blue-200">Jenis Kasus</label>
                       <p className="font-medium text-white">{selectedReport.caseType}</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-sm text-blue-200">Tanggal Kejadian</label>
                         <p className="font-medium text-white">
@@ -266,7 +266,7 @@ export const MyReports: React.FC = () => {
                 {selectedReport.evidenceFiles && selectedReport.evidenceFiles.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-white mb-3">Bukti Pendukung</h3>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {selectedReport.evidenceFiles.map((file, index) => (
                         <div key={index} className="border border-blue-600/50 rounded-lg p-3 flex items-center gap-2 bg-blue-800/50">
                           <FileText className="w-4 h-4 text-blue-400" />

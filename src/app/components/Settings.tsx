@@ -92,26 +92,26 @@ export const Settings: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Pengaturan</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Pengaturan</h1>
         <p className="text-blue-200 mt-1">Kelola akun dan preferensi Anda</p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">
-            <User className="w-4 h-4 mr-2" />
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-1">
+          <TabsTrigger value="profile" className="text-xs sm:text-sm py-2 gap-1.5">
+            <User className="w-4 h-4 shrink-0" />
             Profil
           </TabsTrigger>
-          <TabsTrigger value="security">
-            <Shield className="w-4 h-4 mr-2" />
+          <TabsTrigger value="security" className="text-xs sm:text-sm py-2 gap-1.5">
+            <Shield className="w-4 h-4 shrink-0" />
             Keamanan
           </TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className="w-4 h-4 mr-2" />
+          <TabsTrigger value="notifications" className="text-xs sm:text-sm py-2 gap-1.5">
+            <Bell className="w-4 h-4 shrink-0" />
             Notifikasi
           </TabsTrigger>
-          <TabsTrigger value="preferences">
-            <Globe className="w-4 h-4 mr-2" />
+          <TabsTrigger value="preferences" className="text-xs sm:text-sm py-2 gap-1.5">
+            <Globe className="w-4 h-4 shrink-0" />
             Preferensi
           </TabsTrigger>
         </TabsList>
@@ -125,7 +125,7 @@ export const Settings: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Avatar */}
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 <Avatar className="w-24 h-24">
                   <AvatarFallback className="text-2xl bg-blue-600 text-white">
                     {getInitials(profileData.name)}

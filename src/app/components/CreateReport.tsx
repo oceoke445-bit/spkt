@@ -71,17 +71,17 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
               Laporan Anda telah diterima dan akan segera diproses oleh petugas kami.
               Anda dapat melacak status laporan melalui nomor laporan di atas.
             </p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 onClick={() => onNavigate('my-reports')}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
               >
                 Lihat Laporan Saya
               </Button>
               <Button
                 variant="outline"
                 onClick={() => onNavigate('dashboard')}
-                className="border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
+                className="w-full sm:w-auto border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
               >
                 Kembali ke Dashboard
               </Button>
@@ -95,7 +95,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Buat Laporan</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Buat Laporan</h1>
         <p className="text-blue-200 mt-1">Laporkan kejadian yang Anda alami</p>
       </div>
 
@@ -265,11 +265,11 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button
             type="submit"
             size="lg"
-            className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+            className="w-full sm:flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
           >
             <FileText className="w-4 h-4 mr-2" />
             Kirim Laporan
@@ -279,7 +279,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
             variant="outline"
             size="lg"
             onClick={handleSaveDraft}
-            className="border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
+            className="w-full sm:w-auto border-blue-500/50 text-blue-300 hover:bg-blue-800/50 hover:text-blue-100"
           >
             Simpan Draft
           </Button>
@@ -288,7 +288,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
             variant="ghost"
             size="lg"
             onClick={() => onNavigate('dashboard')}
-            className="text-blue-300 hover:bg-blue-700/50 hover:text-blue-100"
+            className="w-full sm:w-auto text-blue-300 hover:bg-blue-700/50 hover:text-blue-100"
           >
             Batal
           </Button>

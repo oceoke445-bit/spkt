@@ -88,7 +88,7 @@ export const OfficerDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard Petugas</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Dashboard Petugas</h1>
         <p className="text-blue-200 mt-1">Kelola dan proses laporan masyarakat</p>
       </div>
 
@@ -125,7 +125,7 @@ export const OfficerDashboard: React.FC = () => {
                 className="border border-blue-600/50 rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur cursor-pointer"
                 onClick={() => setSelectedReport(report)}
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                   <div>
                     <h3 className="font-semibold text-white">{report.reportNumber}</h3>
                     <p className="text-sm text-blue-200 mt-1">{report.reporterName}</p>
@@ -149,13 +149,13 @@ export const OfficerDashboard: React.FC = () => {
                   </div>
                 </div>
                 {report.assignedTo && (
-                  <div className="mt-3 pt-3 border-t border-blue-600/50 flex items-center justify-between">
+                  <div className="mt-3 pt-3 border-t border-blue-600/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <p className="text-xs text-blue-300">
                       Ditugaskan ke: <span className="font-medium">{report.assignedTo}</span>
                     </p>
                     <Button
                       size="sm"
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedReport(report);
@@ -174,7 +174,7 @@ export const OfficerDashboard: React.FC = () => {
 
       {/* Report Detail Dialog */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-4xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
+        <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur w-[calc(100%-2rem)] sm:max-w-4xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
           {selectedReport && (
             <>
               <DialogHeader>
@@ -202,7 +202,7 @@ export const OfficerDashboard: React.FC = () => {
                 {/* Reporter Data */}
                 <div className="bg-blue-800/50 border border-blue-600/50 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-3">Data Pelapor</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-blue-200">Nama:</span>
                       <p className="font-medium">{selectedReport.reporterName}</p>
@@ -222,7 +222,7 @@ export const OfficerDashboard: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-white mb-3">Detail Kejadian</h3>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <span className="text-sm text-blue-200">Jenis Kasus</span>
                         <p className="font-medium">{selectedReport.caseType}</p>
@@ -249,7 +249,7 @@ export const OfficerDashboard: React.FC = () => {
                 {selectedReport.evidenceFiles && selectedReport.evidenceFiles.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-white mb-3">Bukti Pendukung</h3>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {selectedReport.evidenceFiles.map((file, index) => (
                         <div key={index} className="border rounded-lg p-3 flex items-center gap-2">
                           <FileText className="w-4 h-4 text-blue-200" />

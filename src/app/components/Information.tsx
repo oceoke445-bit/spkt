@@ -145,22 +145,22 @@ export const Information: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Informasi</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Informasi</h1>
         <p className="text-blue-200 mt-1">Pusat informasi dan bantuan SPKT Digital</p>
       </div>
 
       <Tabs defaultValue="articles" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="articles">
-            <FileText className="w-4 h-4 mr-2" />
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto gap-1">
+          <TabsTrigger value="articles" className="text-xs sm:text-sm py-2 gap-1.5">
+            <FileText className="w-4 h-4 shrink-0" />
             Artikel & Panduan
           </TabsTrigger>
-          <TabsTrigger value="contact">
-            <Phone className="w-4 h-4 mr-2" />
+          <TabsTrigger value="contact" className="text-xs sm:text-sm py-2 gap-1.5">
+            <Phone className="w-4 h-4 shrink-0" />
             Kontak
           </TabsTrigger>
-          <TabsTrigger value="faq">
-            <HelpCircle className="w-4 h-4 mr-2" />
+          <TabsTrigger value="faq" className="text-xs sm:text-sm py-2 gap-1.5">
+            <HelpCircle className="w-4 h-4 shrink-0" />
             FAQ
           </TabsTrigger>
         </TabsList>

@@ -168,14 +168,14 @@ export const Complaints: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Pengaduan</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Pengaduan</h1>
           <p className="text-blue-200 mt-1">Sampaikan keluhan dan saran Anda</p>
         </div>
         <Button
           onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+          className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
         >
           <Send className="w-4 h-4 mr-2" />
           Buat Pengaduan

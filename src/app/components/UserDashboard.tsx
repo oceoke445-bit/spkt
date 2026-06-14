@@ -46,7 +46,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Dashboard</h1>
         <p className="text-blue-200 mt-1">Selamat datang di SPKT Digital</p>
       </div>
 
@@ -148,7 +148,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
               {userReports.slice(0, 3).map((report) => (
                 <div
                   key={report.id}
-                  className="flex items-center justify-between p-4 border border-blue-600/50 rounded-xl hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border border-blue-600/50 rounded-xl hover:shadow-lg hover:border-blue-400 transition-all bg-gradient-to-r from-blue-800/60 to-blue-700/60 backdrop-blur"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
@@ -169,7 +169,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onNavigate }) => {
                   </div>
                   <Button
                     size="sm"
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
                     onClick={() => onNavigate('my-reports')}
                   >
                     <FileText className="w-3 h-3 mr-1" />

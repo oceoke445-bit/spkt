@@ -51,7 +51,7 @@ export const LetterService: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Layanan Surat</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Layanan Surat</h1>
         <p className="text-blue-200 mt-1">Ajukan berbagai surat keterangan</p>
       </div>
 
@@ -274,11 +274,11 @@ export const LetterService: React.FC = () => {
               </div>
 
               {/* Submit */}
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   type="submit"
                   size="lg"
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                  className="w-full sm:flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Ajukan Permohonan

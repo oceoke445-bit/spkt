@@ -72,7 +72,7 @@ export const AdminControl: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Admin Control Center</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Admin Control Center</h1>
         <p className="text-blue-200 mt-1">Kontrol penuh sistem & override capabilities</p>
       </div>
 
@@ -160,7 +160,7 @@ export const AdminControl: React.FC = () => {
                         </Badge>
                       )}
                     </div>
-                    <div className="grid grid-cols-3 gap-3 text-sm text-blue-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-blue-200">
                       <div>
                         <FileText className="w-3 h-3 inline mr-1" />
                         {report.caseType}
@@ -179,7 +179,7 @@ export const AdminControl: React.FC = () => {
                 </div>
 
                 {/* Admin Actions */}
-                <div className="flex gap-2 pt-3 border-t border-blue-600/50">
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-blue-600/50">
                   <Button
                     size="sm"
                     variant="destructive"

@@ -48,7 +48,7 @@ export const LoginPage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-4 shadow-2xl ring-4 ring-blue-400/30">
             <ShieldCheck className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">SPKT Digital</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">SPKT Digital</h1>
           <p className="text-blue-200">Sistem Pelayanan Kepolisian Terpadu</p>
         </div>
 
@@ -109,7 +109,7 @@ export const LoginPage: React.FC = () => {
 
             <div className="mt-6 pt-6 border-t border-blue-500/40">
               <p className="text-sm text-blue-300 mb-3 text-center">Demo Login:</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Button
                   type="button"
                   variant="outline"

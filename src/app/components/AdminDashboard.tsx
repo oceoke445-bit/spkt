@@ -78,7 +78,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard Admin</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Dashboard Admin</h1>
         <p className="text-blue-200 mt-1">Monitoring dan statistik sistem SPKT Digital</p>
       </div>
 

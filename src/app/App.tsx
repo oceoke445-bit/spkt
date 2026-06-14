@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginPage } from "./components/LoginPage";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar, SidebarContent } from "./components/Sidebar";
+import { MobileHeader } from "./components/MobileHeader";
+import { Sheet, SheetContent } from "./components/ui/sheet";
 import { UserDashboard } from "./components/UserDashboard";
 import { CreateReport } from "./components/CreateReport";
 import { MyReports } from "./components/MyReports";
@@ -17,6 +19,7 @@ import { Toaster } from "./components/ui/sonner";
 const MainApp: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const [currentView, setCurrentView] = useState("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (!isAuthenticated || !user) {
     return <LoginPage />;
@@ -86,14 +89,38 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
+    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 overflow-hidden">
       <Sidebar
         currentView={currentView}
         onViewChange={setCurrentView}
       />
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">{renderView()}</div>
-      </main>
+
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent
+          side="left"
+          className="w-[min(100vw-3rem,18rem)] max-w-[85vw] p-0 border-blue-500/30 bg-transparent [&>button]:text-white [&>button]:hover:text-blue-200 [&>button]:top-4 [&>button]:right-4"
+        >
+          <SidebarContent
+            currentView={currentView}
+            onViewChange={setCurrentView}
+            onNavigate={() => setMobileMenuOpen(false)}
+            className="h-full"
+          />
+        </SheetContent>
+      </Sheet>
+
+      <div className="flex flex-1 flex-col min-w-0 min-h-0">
+        <MobileHeader
+          currentView={currentView}
+          onMenuOpen={() => setMobileMenuOpen(true)}
+        />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+            {renderView()}
+          </div>
+        </main>
+      </div>
+
       <Toaster richColors position="top-right" />
     </div>
   );
@@ -143,7 +170,7 @@ const UserManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">
           User Management
         </h1>
         <p className="text-blue-200 mt-1">
@@ -152,7 +179,8 @@ const UserManagement: React.FC = () => {
       </div>
 
       <div className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border border-blue-500/50 rounded-lg shadow-xl overflow-hidden backdrop-blur">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px]">
           <thead className="bg-blue-950/50 border-b border-blue-500/30">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">
@@ -208,6 +236,7 @@ const UserManagement: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
