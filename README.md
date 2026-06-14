@@ -44,7 +44,8 @@ Database dan seed data dibuat otomatis di `data/spkt.db` saat pertama kali API d
 
 ## Dokumentasi
 
-- [Flow & diagram](docs/FLOW.md)
+- [Penjelasan flow & proses aplikasi](docs/penjelasan.md)
+- [Flow & diagram ringkas](docs/FLOW.md)
 - [API contract](docs/API.md)
 
 ## Struktur Penting

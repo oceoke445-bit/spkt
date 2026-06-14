@@ -112,7 +112,7 @@ export const LoginPage: React.FC = () => {
             </form>
 
             <div className="mt-6 pt-6 border-t border-blue-500/40">
-              <p className="text-sm text-blue-300 mb-3 text-center">Demo Login:</p>
+              <p className="text-sm text-blue-300 mb-3 text-center">Login:</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Button
                   type="button"
