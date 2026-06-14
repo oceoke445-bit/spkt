@@ -37,6 +37,9 @@ import { complaintCategories } from '@/lib/constants';
 import { spktApi } from '@/lib/spktApi';
 import { useComplaints } from '@/hooks/useComplaints';
 
+const complaintDialogClass =
+  'w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur p-4 sm:p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400';
+
 export const Complaints: React.FC = () => {
   const { user } = useAuth();
   const isStaff = user?.role === 'petugas' || user?.role === 'admin';
@@ -281,7 +284,7 @@ export const Complaints: React.FC = () => {
 
       {/* Create Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-2xl">
+        <DialogContent className={`${complaintDialogClass} sm:max-w-2xl`}>
           <DialogHeader>
             <DialogTitle>Buat Pengaduan Baru</DialogTitle>
             <DialogDescription>
@@ -329,12 +332,12 @@ export const Complaints: React.FC = () => {
 
             <div className="space-y-2">
               <Label className="text-blue-200" htmlFor="description">Detail Pengaduan *</Label>
-              <Textarea className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
+              <Textarea className="bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400 min-h-[100px] sm:min-h-[150px]"
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Jelaskan secara detail pengaduan Anda..."
-                rows={6}
+                rows={4}
                 required
               />
               <p className="text-xs text-blue-300">
@@ -353,7 +356,7 @@ export const Complaints: React.FC = () => {
               />
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row">
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
@@ -364,7 +367,7 @@ export const Complaints: React.FC = () => {
               <Button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md"
+                className="sm:flex-none bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md"
               >
                 Batal
               </Button>
@@ -375,7 +378,7 @@ export const Complaints: React.FC = () => {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedComplaint} onOpenChange={() => setSelectedComplaint(null)}>
-        <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-3xl">
+        <DialogContent className={`${complaintDialogClass} sm:max-w-3xl`}>
           {selectedComplaint && (
             <>
               <DialogHeader>
