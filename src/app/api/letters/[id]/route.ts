@@ -31,6 +31,7 @@ export const PATCH = handleApi(async (request, context: { params: Promise<{ id: 
   const letter = updateLetter(id, {
     status: body.status,
     pickupDate: body.pickupDate,
+    rejectionReason: body.rejectionReason,
   });
 
   if (!letter) {

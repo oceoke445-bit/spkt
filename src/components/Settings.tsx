@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -30,6 +30,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { spktApi } from '@/lib/spktApi';
 
 const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
 const itemClass = 'flex items-center justify-between p-4 border border-blue-500/30 rounded-lg bg-blue-950/30';
@@ -38,7 +39,7 @@ const tabTriggerClass =
   'text-blue-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-400/50 [&_svg]:text-blue-300 data-[state=active]:[&_svg]:text-sky-200';
 
 export const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [notifications, setNotifications] = useState({
@@ -55,8 +56,20 @@ export const Settings: React.FC = () => {
     email: user?.email || '',
     phone: user?.phone || '',
     nik: user?.nik || '',
-    address: 'Jl. Sudirman No. 123, Jakarta Pusat'
+    address: ''
   });
+
+  useEffect(() => {
+    spktApi.getProfile().then(({ user: profile }) => {
+      setProfileData({
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone || '',
+        nik: profile.nik || '',
+        address: profile.address || '',
+      });
+    }).catch(() => {});
+  }, []);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -64,23 +77,38 @@ export const Settings: React.FC = () => {
     confirmPassword: ''
   });
 
-  const handleSaveProfile = () => {
-    toast.success('Profil berhasil diperbarui', {
-      description: 'Perubahan data Anda telah disimpan'
-    });
+  const handleSaveProfile = async () => {
+    try {
+      await spktApi.updateProfile({
+        name: profileData.name,
+        phone: profileData.phone,
+        address: profileData.address,
+      });
+      await refreshUser();
+      toast.success('Profil berhasil diperbarui', {
+        description: 'Perubahan data Anda telah disimpan',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal memperbarui profil');
+    }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('Password tidak cocok', {
-        description: 'Password baru dan konfirmasi password harus sama'
+        description: 'Password baru dan konfirmasi password harus sama',
       });
       return;
     }
-    toast.success('Password berhasil diubah', {
-      description: 'Silakan gunakan password baru Anda untuk login'
-    });
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    try {
+      await spktApi.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      toast.success('Password berhasil diubah', {
+        description: 'Silakan gunakan password baru Anda untuk login',
+      });
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengubah password');
+    }
   };
 
   const handleNotificationChange = (key: string, value: boolean) => {

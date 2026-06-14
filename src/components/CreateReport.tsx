@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -16,9 +16,11 @@ import { toast } from 'sonner';
 
 interface CreateReportProps {
   onNavigate: (view: string) => void;
+  draftId?: string | null;
+  onDraftConsumed?: () => void;
 }
 
-export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
+export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId, onDraftConsumed }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -39,6 +41,26 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
   };
 
   const [submitting, setSubmitting] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!draftId) return;
+    spktApi.getReport(draftId).then(({ report }) => {
+      if (report.status !== 'draft') return;
+      setEditingDraftId(draftId);
+      setFormData({
+        name: report.reporterName,
+        nik: report.reporterNIK,
+        phone: report.reporterPhone,
+        caseType: report.caseType,
+        incidentDate: report.incidentDate,
+        location: report.location,
+        description: report.description,
+        files: [],
+      });
+      onDraftConsumed?.();
+    }).catch(() => {});
+  }, [draftId, onDraftConsumed]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,17 +73,27 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
         evidenceFiles = uploaded.map((f) => f.storedName);
       }
 
-      const { report } = await spktApi.createReport({
-        reporterUserId: user?.id,
-        reporterName: formData.name,
-        reporterNIK: formData.nik,
-        reporterPhone: formData.phone,
-        caseType: formData.caseType,
-        incidentDate: formData.incidentDate,
-        location: formData.location,
-        description: formData.description,
-        evidenceFiles,
-      });
+      const { report } = editingDraftId
+        ? await spktApi.updateUserReport(editingDraftId, {
+            caseType: formData.caseType,
+            incidentDate: formData.incidentDate,
+            location: formData.location,
+            description: formData.description,
+            reporterPhone: formData.phone,
+            evidenceFiles,
+            submit: true,
+          })
+        : await spktApi.createReport({
+            reporterUserId: user?.id,
+            reporterName: formData.name,
+            reporterNIK: formData.nik,
+            reporterPhone: formData.phone,
+            caseType: formData.caseType,
+            incidentDate: formData.incidentDate,
+            location: formData.location,
+            description: formData.description,
+            evidenceFiles,
+          });
 
       setReportNumber(report.reportNumber);
       setSubmitted(true);
@@ -80,17 +112,36 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
 
   const handleSaveDraft = async () => {
     try {
-      await spktApi.createReport({
-        reporterUserId: user?.id,
-        reporterName: formData.name,
-        reporterNIK: formData.nik,
-        reporterPhone: formData.phone,
-        caseType: formData.caseType || 'Lainnya',
-        incidentDate: formData.incidentDate || new Date().toISOString().slice(0, 10),
-        location: formData.location || '-',
-        description: formData.description || 'Draft laporan',
-        status: 'draft',
-      });
+      let evidenceFiles: string[] = [];
+      if (formData.files.length > 0) {
+        const { files: uploaded } = await spktApi.uploadFiles(formData.files);
+        evidenceFiles = uploaded.map((f) => f.storedName);
+      }
+
+      if (editingDraftId) {
+        await spktApi.updateUserReport(editingDraftId, {
+          caseType: formData.caseType || 'Lainnya',
+          incidentDate: formData.incidentDate || new Date().toISOString().slice(0, 10),
+          location: formData.location || '-',
+          description: formData.description || 'Draft laporan',
+          reporterPhone: formData.phone,
+          evidenceFiles,
+        });
+      } else {
+        const { report } = await spktApi.createReport({
+          reporterUserId: user?.id,
+          reporterName: formData.name,
+          reporterNIK: formData.nik,
+          reporterPhone: formData.phone,
+          caseType: formData.caseType || 'Lainnya',
+          incidentDate: formData.incidentDate || new Date().toISOString().slice(0, 10),
+          location: formData.location || '-',
+          description: formData.description || 'Draft laporan',
+          status: 'draft',
+          evidenceFiles,
+        });
+        setEditingDraftId(report.id);
+      }
       toast.success('Draft tersimpan', {
         description: 'Anda dapat melanjutkan nanti',
       });

@@ -1,24 +1,18 @@
-import { listOfficers } from '@/lib/services/spkt';
-import { createOfficer } from '@/lib/services/users';
+import { updateOfficer } from '@/lib/services/users';
 import { requireAuth, requireRole } from '@/lib/auth-server';
 import { handleApi, jsonOk } from '@/lib/api-response';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export const GET = handleApi(async (request) => {
-  const sessionUser = await requireAuth(request);
-  requireRole(sessionUser, ['petugas', 'admin']);
-  const officers = listOfficers();
-  return jsonOk({ officers });
-});
-
-export const POST = handleApi(async (request) => {
+export const PATCH = handleApi(async (request, context: { params: Promise<{ id: string }> }) => {
   const sessionUser = await requireAuth(request);
   requireRole(sessionUser, ['admin']);
 
+  const { id } = await context.params;
   const body = await request.json();
-  createOfficer({
+
+  updateOfficer(id, {
     name: body.name,
     rank: body.rank,
     email: body.email,
@@ -27,5 +21,5 @@ export const POST = handleApi(async (request) => {
     userId: body.userId,
   });
 
-  return jsonOk({ message: 'Petugas ditambahkan' }, 201);
+  return jsonOk({ message: 'Petugas diperbarui' });
 });

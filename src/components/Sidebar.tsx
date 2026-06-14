@@ -35,7 +35,7 @@ const menuItems: MenuItem[] = [
   { icon: Inbox, iconColor: iconAccent.indigo.color, label: 'Laporan Masuk', view: 'incoming-reports', roles: ['petugas'] },
   { icon: ClipboardList, iconColor: iconAccent.violet.color, label: 'Semua Laporan', view: 'all-reports', roles: ['admin'] },
   { icon: Mail, iconColor: iconAccent.violet.color, label: 'Layanan Surat', view: 'letter-service', roles: ['user', 'petugas', 'admin'] },
-  { icon: MessageSquare, iconColor: iconAccent.emerald.color, label: 'Pengaduan', view: 'complaints', roles: ['user', 'admin'] },
+  { icon: MessageSquare, iconColor: iconAccent.emerald.color, label: 'Pengaduan', view: 'complaints', roles: ['user', 'petugas', 'admin'] },
   { icon: Users, iconColor: iconAccent.sky.color, label: 'User Management', view: 'user-management', roles: ['admin'] },
   { icon: BarChart3, iconColor: iconAccent.amber.color, label: 'Statistik', view: 'statistics', roles: ['admin'] },
   { icon: Star, iconColor: iconAccent.amber.color, label: 'Kepuasan (CSI)', view: 'csi-dashboard', roles: ['admin'] },

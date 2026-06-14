@@ -61,6 +61,7 @@ export interface UpdateReportPayload {
   notes?: string;
   timelineNote?: string;
   timelineOfficer?: string;
+  adminOverride?: boolean;
 }
 
 export interface CreateLetterPayload {
@@ -78,6 +79,41 @@ export interface CreateLetterPayload {
 export interface UpdateLetterPayload {
   status?: LetterStatus;
   pickupDate?: string | null;
+  rejectionReason?: string | null;
+}
+
+export interface UpdateUserReportPayload {
+  caseType?: string;
+  incidentDate?: string;
+  location?: string;
+  description?: string;
+  reporterPhone?: string;
+  evidenceFiles?: string[];
+  submit?: boolean;
+}
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  name: string;
+  nik: string;
+  phone: string;
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  phone?: string;
+  address?: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  createdAt: string;
 }
 
 export interface CreateComplaintPayload {
@@ -109,6 +145,33 @@ export const spktApi = {
       body: JSON.stringify({ email, password }),
     }),
 
+  register: (payload: RegisterPayload) =>
+    request<LoginResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getProfile: () =>
+    request<{ user: LoginResponse['user'] & { address?: string } }>('/users/me'),
+
+  updateProfile: (payload: UpdateProfilePayload) =>
+    request<{ user: LoginResponse['user'] & { address?: string } }>('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ message: string }>('/users/me/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
+  updateUser: (id: string, payload: { name?: string; email?: string; role?: string; active?: boolean }) =>
+    request<{ message: string }>(`/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   getReports: (params?: { nik?: string; assignedTo?: string }) => {
     const search = new URLSearchParams();
     if (params?.nik) search.set('nik', params.nik);
@@ -126,6 +189,12 @@ export const spktApi = {
     }),
 
   updateReport: (id: string, payload: UpdateReportPayload) =>
+    request<{ report: Report }>(`/reports/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  updateUserReport: (id: string, payload: UpdateUserReportPayload) =>
     request<{ report: Report }>(`/reports/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -172,7 +241,62 @@ export const spktApi = {
   getOfficers: () => request<{ officers: Officer[] }>('/officers'),
 
   getUsers: () =>
-    request<{ users: Array<{ id: string; name: string; email: string; role: string }> }>('/users'),
+    request<{
+      users: Array<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+        active: boolean;
+        nik?: string;
+        phone?: string;
+      }>;
+    }>('/users'),
+
+  getAdminStats: () =>
+    request<{
+      stats: {
+        totalReports: number;
+        completedReports: number;
+        processingReports: number;
+        completionRate: number;
+        reportsToday: number;
+        avgCompletionDays: number;
+        monthlyTrend: Array<{ month: string; laporan: number; selesai: number }>;
+        responseTimeBuckets: Array<{ category: string; count: number }>;
+        caseDistribution: Array<{ name: string; value: number }>;
+      };
+    }>('/stats/admin'),
+
+  getNotifications: () => request<{ notifications: NotificationItem[] }>('/notifications'),
+
+  markNotificationRead: (id: string) =>
+    request<{ message: string }>(`/notifications/${id}`, { method: 'PATCH' }),
+
+  markAllNotificationsRead: () =>
+    request<{ message: string }>('/notifications', { method: 'PATCH' }),
+
+  createOfficer: (payload: {
+    name: string;
+    rank: string;
+    email: string;
+    phone: string;
+    status?: string;
+    userId?: string;
+  }) =>
+    request<{ message: string }>('/officers', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateOfficer: (
+    id: string,
+    payload: Partial<{ name: string; rank: string; email: string; phone: string; status: string }>,
+  ) =>
+    request<{ message: string }>(`/officers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
 
   uploadFiles: (files: File[]) => {
     const formData = new FormData();

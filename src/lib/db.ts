@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
 import path from 'path';
+import { hashPassword, isPasswordHashed } from '@/lib/password';
 
 const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 
@@ -203,7 +204,52 @@ function initAppTables() {
       last_value INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (prefix, year)
     );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      link TEXT,
+      read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
   `);
+
+  migrateSchema();
+}
+
+function columnExists(table: string, column: string): boolean {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  return cols.some((c) => c.name === column);
+}
+
+function migrateSchema() {
+  if (!columnExists('users', 'active')) {
+    db.exec('ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
+  }
+  if (!columnExists('users', 'address')) {
+    db.exec('ALTER TABLE users ADD COLUMN address TEXT');
+  }
+  if (!columnExists('letter_requests', 'rejection_reason')) {
+    db.exec('ALTER TABLE letter_requests ADD COLUMN rejection_reason TEXT');
+  }
+
+  migratePlainPasswords();
+}
+
+function migratePlainPasswords() {
+  const rows = db.prepare('SELECT id, password FROM users').all() as Array<{ id: string; password: string }>;
+  const update = db.prepare('UPDATE users SET password = ? WHERE id = ?');
+  for (const row of rows) {
+    if (!isPasswordHashed(row.password)) {
+      update.run(hashPassword(row.password), row.id);
+    }
+  }
 }
 
 function seedAppData() {
@@ -214,10 +260,12 @@ function seedAppData() {
     'INSERT INTO users (id, email, password, name, nik, phone, role) VALUES (@id, @email, @password, @name, @nik, @phone, @role)',
   );
 
+  const demoPassword = hashPassword('spkt123');
+
   insertUser.run({
     id: 'U001',
     email: 'user@spkt.id',
-    password: 'spkt123',
+    password: demoPassword,
     name: 'Budi Santoso',
     nik: '3201012345678901',
     phone: '081234567890',
@@ -226,7 +274,7 @@ function seedAppData() {
   insertUser.run({
     id: 'U002',
     email: 'petugas@spkt.id',
-    password: 'spkt123',
+    password: demoPassword,
     name: 'Ipda. Ahmad Wijaya',
     nik: null,
     phone: '081234567890',
@@ -235,7 +283,7 @@ function seedAppData() {
   insertUser.run({
     id: 'U003',
     email: 'admin@spkt.id',
-    password: 'spkt123',
+    password: demoPassword,
     name: 'Kompol. Sarah Putri',
     nik: null,
     phone: null,

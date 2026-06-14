@@ -38,8 +38,8 @@ import { useComplaints } from '@/hooks/useComplaints';
 
 export const Complaints: React.FC = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const nikFilter = isAdmin ? undefined : user?.nik;
+  const isStaff = user?.role === 'petugas' || user?.role === 'admin';
+  const nikFilter = isStaff ? undefined : user?.nik;
 
   const { complaints: userComplaints, loading, refresh } = useComplaints(nikFilter);
   const [showForm, setShowForm] = useState(false);
@@ -158,10 +158,10 @@ export const Complaints: React.FC = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Pengaduan</h1>
           <p className="text-blue-200 mt-1">
-            {isAdmin ? 'Kelola dan tanggapi pengaduan masyarakat' : 'Sampaikan keluhan dan saran Anda'}
+            {isStaff ? 'Kelola dan tanggapi pengaduan masyarakat' : 'Sampaikan keluhan dan saran Anda'}
           </p>
         </div>
-        {!isAdmin && (
+        {!isStaff && (
         <Button
           onClick={() => setShowForm(true)}
           className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md [&_svg]:text-sky-200"
@@ -209,9 +209,9 @@ export const Complaints: React.FC = () => {
       {/* Complaint List */}
       <Card className="bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-white">{isAdmin ? 'Semua Pengaduan' : 'Daftar Pengaduan'}</CardTitle>
+          <CardTitle className="text-white">{isStaff ? 'Semua Pengaduan' : 'Daftar Pengaduan'}</CardTitle>
           <CardDescription className="text-blue-200">
-            {isAdmin ? 'Tinjau dan tanggapi pengaduan dari masyarakat' : 'Riwayat pengaduan yang telah diajukan'}
+            {isStaff ? 'Tinjau dan tanggapi pengaduan dari masyarakat' : 'Riwayat pengaduan yang telah diajukan'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -249,7 +249,7 @@ export const Complaints: React.FC = () => {
                       <Calendar className="w-3 h-3 text-cyan-300" />
                       {new Date(complaint.createdAt).toLocaleDateString('id-ID')}
                     </span>
-                    {isAdmin && complaint.submitterName && (
+                    {isStaff && complaint.submitterName && (
                       <span className="flex items-center gap-1">
                         <User className="w-3 h-3 text-cyan-300" />
                         {complaint.submitterName}
@@ -438,7 +438,7 @@ export const Complaints: React.FC = () => {
                 )}
 
                 {/* Admin response panel */}
-                {isAdmin && (
+                {isStaff && (
                   <div className="border border-amber-500/40 rounded-lg p-4 bg-amber-900/20 space-y-4">
                     <h3 className="font-semibold text-amber-200">Tanggapan Admin</h3>
                     <div className="space-y-2">

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateUser } from '@/lib/services/spkt';
+import { authenticateUser } from '@/lib/services/users';
 import {
   createSession,
   getSessionCookieName,

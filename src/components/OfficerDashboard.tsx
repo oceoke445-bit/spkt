@@ -290,11 +290,17 @@ export const OfficerDashboard: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-white mb-3">Bukti Pendukung</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {selectedReport.evidenceFiles.map((file, index) => (
-                        <div key={index} className="border rounded-lg p-3 flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-blue-200" />
-                          <span className="text-sm text-blue-100">{file}</span>
-                        </div>
+                      {selectedReport.evidenceFiles.map((file) => (
+                        <a
+                          key={file}
+                          href={spktApi.getFileUrl(file)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="border border-blue-500/40 rounded-lg p-3 flex items-center gap-2 bg-blue-900/40 text-blue-100 hover:text-cyan-200"
+                        >
+                          <FileText className="w-4 h-4 text-blue-200 shrink-0" />
+                          <span className="text-sm truncate">{file}</span>
+                        </a>
                       ))}
                     </div>
                   </div>

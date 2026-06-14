@@ -6,8 +6,10 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { ShieldCheck, Mail, Lock, AlertCircle } from 'lucide-react';
+import { RegisterPage } from './RegisterPage';
 
 export const LoginPage: React.FC = () => {
+  const [showRegister, setShowRegister] = useState(false);
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +42,10 @@ export const LoginPage: React.FC = () => {
       setPassword('spkt123');
     }
   };
+
+  if (showRegister) {
+    return <RegisterPage onBackToLogin={() => setShowRegister(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 flex items-center justify-center p-4">
@@ -144,9 +150,13 @@ export const LoginPage: React.FC = () => {
 
         <p className="text-center text-sm text-blue-300 mt-6">
           Belum punya akun?{' '}
-          <a href="#" className="text-blue-400 hover:text-blue-300 hover:underline">
+          <button
+            type="button"
+            onClick={() => setShowRegister(true)}
+            className="text-blue-400 hover:text-blue-300 hover:underline"
+          >
             Daftar sekarang
-          </a>
+          </button>
         </p>
       </div>
     </div>

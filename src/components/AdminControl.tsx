@@ -53,6 +53,7 @@ export const AdminControl: React.FC = () => {
         notes: overrideReason,
         timelineNote: overrideReason,
         timelineOfficer: user?.name,
+        adminOverride: true,
       });
       await refresh();
       toast.success('Status berhasil di-override', {

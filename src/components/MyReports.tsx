@@ -7,9 +7,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { getStatusBadgeColor, getStatusLabel, Report } from '@/lib/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReports } from '@/hooks/useReports';
-import { Search, FileText, Calendar, MapPin, User, Phone, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Search, FileText, Calendar, MapPin, User, Phone, CheckCircle2, Clock, AlertCircle, ExternalLink } from 'lucide-react';
+import { spktApi } from '@/lib/spktApi';
 
-export const MyReports: React.FC = () => {
+interface MyReportsProps {
+  onContinueDraft?: (reportId: string) => void;
+}
+
+export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
   const { user } = useAuth();
   const { reports: userReports, loading } = useReports({ nik: user?.nik });
   const [searchQuery, setSearchQuery] = useState('');
@@ -136,13 +141,32 @@ export const MyReports: React.FC = () => {
                         year: 'numeric'
                       })}
                     </span>
-                    <Button
-                      size="sm"
-                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
-                    >
+                    <div className="flex gap-2">
+                      {report.status === 'draft' && onContinueDraft && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-amber-400/50 text-amber-200 hover:bg-amber-900/40"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onContinueDraft(report.id);
+                          }}
+                        >
+                          Lanjutkan Draft
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedReport(report);
+                        }}
+                      >
                       <FileText className="w-3 h-3 mr-1" />
                       Detail
                     </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -275,11 +299,18 @@ export const MyReports: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-white mb-3">Bukti Pendukung</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {selectedReport.evidenceFiles.map((file, index) => (
-                        <div key={index} className="border border-blue-600/50 rounded-lg p-3 flex items-center gap-2 bg-blue-800/50">
-                          <FileText className="w-4 h-4 text-blue-400" />
-                          <span className="text-sm text-blue-100">{file}</span>
-                        </div>
+                      {selectedReport.evidenceFiles.map((file) => (
+                        <a
+                          key={file}
+                          href={spktApi.getFileUrl(file)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="border border-blue-600/50 rounded-lg p-3 flex items-center gap-2 bg-blue-800/50 text-blue-100 hover:text-cyan-200"
+                        >
+                          <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                          <span className="text-sm truncate">{file}</span>
+                          <ExternalLink className="w-3 h-3 ml-auto shrink-0" />
+                        </a>
                       ))}
                     </div>
                   </div>

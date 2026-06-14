@@ -51,12 +51,14 @@ export const LetterService: React.FC = () => {
   const [managingLetter, setManagingLetter] = useState<LetterRequest | null>(null);
   const [staffStatus, setStaffStatus] = useState<LetterStatus>('submitted');
   const [staffPickupDate, setStaffPickupDate] = useState('');
+  const [staffRejectionReason, setStaffRejectionReason] = useState('');
   const [staffSaving, setStaffSaving] = useState(false);
 
   useEffect(() => {
     if (managingLetter) {
       setStaffStatus(managingLetter.status);
       setStaffPickupDate(managingLetter.pickupDate ?? '');
+      setStaffRejectionReason(managingLetter.rejectionReason ?? '');
     }
   }, [managingLetter]);
 
@@ -115,6 +117,7 @@ export const LetterService: React.FC = () => {
       const { letter } = await spktApi.updateLetter(managingLetter.id, {
         status: staffStatus,
         pickupDate: staffStatus === 'ready' ? staffPickupDate || null : managingLetter.pickupDate ?? null,
+        rejectionReason: staffStatus === 'rejected' ? staffRejectionReason : null,
       });
       await refreshLetters();
       setManagingLetter(letter);
@@ -489,6 +492,19 @@ export const LetterService: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {staffStatus === 'rejected' && (
+                <div className="space-y-2">
+                  <Label className="text-blue-200">Alasan Penolakan *</Label>
+                  <Textarea
+                    value={staffRejectionReason}
+                    onChange={(e) => setStaffRejectionReason(e.target.value)}
+                    className="bg-blue-900/50 border-blue-500/50 text-white"
+                    rows={3}
+                    required
+                  />
+                </div>
+              )}
 
               {staffStatus === 'ready' && (
                 <div className="space-y-2">

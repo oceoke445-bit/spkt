@@ -1,4 +1,4 @@
-import { listUsersDetailed } from '@/lib/services/users';
+import { getAdminStats } from '@/lib/services/stats';
 import { requireAuth, requireRole } from '@/lib/auth-server';
 import { handleApi, jsonOk } from '@/lib/api-response';
 
@@ -8,6 +8,5 @@ export const dynamic = 'force-dynamic';
 export const GET = handleApi(async (request) => {
   const sessionUser = await requireAuth(request);
   requireRole(sessionUser, ['admin']);
-  const users = listUsersDetailed();
-  return jsonOk({ users });
+  return jsonOk({ stats: getAdminStats() });
 });

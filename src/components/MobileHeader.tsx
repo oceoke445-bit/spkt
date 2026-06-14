@@ -2,13 +2,15 @@ import React from 'react';
 import { Menu, ShieldCheck } from 'lucide-react';
 import { Button } from './ui/button';
 import { getViewLabel } from './Sidebar';
+import { NotificationBell } from './NotificationBell';
 
 interface MobileHeaderProps {
   currentView: string;
   onMenuOpen: () => void;
+  onNavigate?: (view: string) => void;
 }
 
-export const MobileHeader: React.FC<MobileHeaderProps> = ({ currentView, onMenuOpen }) => {
+export const MobileHeader: React.FC<MobileHeaderProps> = ({ currentView, onMenuOpen, onNavigate }) => {
   return (
     <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-3 border-b border-blue-500/30 bg-blue-950/95 backdrop-blur supports-[backdrop-filter]:bg-blue-950/80">
       <div className="flex items-center gap-3 min-w-0">
@@ -30,6 +32,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ currentView, onMenuO
           <p className="text-xs text-blue-300 truncate">{getViewLabel(currentView)}</p>
         </div>
       </div>
+      {onNavigate && <NotificationBell onNavigate={onNavigate} />}
     </header>
   );
 };

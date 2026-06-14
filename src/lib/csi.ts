@@ -56,6 +56,18 @@ export function submitSurvey(payload: SubmitSurveyPayload) {
     throw new Error('Semua dimensi penilaian harus diisi');
   }
 
+  if (payload.referenceId && payload.userId) {
+    const dup = db
+      .prepare(
+        `SELECT id FROM satisfaction_surveys
+         WHERE user_id = ? AND reference_id = ? AND service_type = ?`,
+      )
+      .get(payload.userId, payload.referenceId, payload.serviceType) as { id: number } | undefined;
+    if (dup) {
+      throw new Error('Anda sudah memberikan penilaian untuk layanan ini');
+    }
+  }
+
   let weightedSum = 0;
   let maxWeighted = 0;
   for (const { score, weight } of scores) {

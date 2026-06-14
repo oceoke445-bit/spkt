@@ -23,7 +23,7 @@ export const GET = handleApi(async (request, context: { params: Promise<{ id: st
 
 export const PATCH = handleApi(async (request, context: { params: Promise<{ id: string }> }) => {
   const sessionUser = await requireAuth(request);
-  requireRole(sessionUser, ['admin']);
+  requireRole(sessionUser, ['admin', 'petugas']);
 
   const { id } = await context.params;
   const body = await request.json();

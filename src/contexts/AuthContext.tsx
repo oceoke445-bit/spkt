@@ -18,7 +18,15 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (payload: {
+    email: string;
+    password: string;
+    name: string;
+    nik: string;
+    phone: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -89,13 +97,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const register = async (payload: {
+    email: string;
+    password: string;
+    name: string;
+    nik: string;
+    phone: string;
+  }) => {
+    const { user: dbUser } = await spktApi.register(payload);
+    setUser({
+      id: dbUser.id,
+      name: dbUser.name,
+      email: dbUser.email,
+      role: dbUser.role,
+      nik: dbUser.nik,
+      phone: dbUser.phone,
+    });
+  };
+
+  const refreshUser = async () => {
+    const { user: profile } = await spktApi.getProfile();
+    setUser({
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role,
+      nik: profile.nik,
+      phone: profile.phone,
+    });
+  };
+
   const logout = async () => {
     await spktApi.logout();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, refreshUser, isAuthenticated: !!user }}
+    >
       {children}
     </AuthContext.Provider>
   );

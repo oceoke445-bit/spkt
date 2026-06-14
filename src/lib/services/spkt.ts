@@ -4,6 +4,8 @@ import {
   allocateLetterNumber,
   allocateComplaintNumber,
 } from '@/lib/reference';
+import { canTransitionReport, canTransitionLetter, canTransitionComplaint } from '@/lib/status-transitions';
+import { createNotification, notifyUserByNik } from '@/lib/services/notifications';
 import type {
   Report,
   ReportStatus,
@@ -14,7 +16,6 @@ import type {
   ComplaintCategory,
   ComplaintStatus,
   Officer,
-  DbUser,
 } from '@/lib/types/spkt';
 
 function nowIso(): string {
@@ -190,6 +191,17 @@ export interface UpdateReportInput {
   notes?: string;
   timelineNote?: string;
   timelineOfficer?: string;
+  adminOverride?: boolean;
+}
+
+export interface UpdateUserReportInput {
+  caseType?: string;
+  incidentDate?: string;
+  location?: string;
+  description?: string;
+  reporterPhone?: string;
+  evidenceFiles?: string[];
+  submit?: boolean;
 }
 
 const STATUS_TIMELINE_LABEL: Partial<Record<ReportStatus, string>> = {
@@ -205,6 +217,14 @@ export function updateReport(id: string, input: UpdateReportInput): Report {
   const existing = getReportById(id);
   if (!existing) {
     throw new Error('Laporan tidak ditemukan');
+  }
+
+  if (
+    input.status &&
+    input.status !== existing.status &&
+    !canTransitionReport(existing.status, input.status, { adminOverride: input.adminOverride })
+  ) {
+    throw new Error(`Perubahan status dari "${existing.status}" ke "${input.status}" tidak diizinkan`);
   }
 
   const ts = nowIso();
@@ -244,6 +264,75 @@ export function updateReport(id: string, input: UpdateReportInput): Report {
     addTimelineEvent(id, 'Ditugaskan', ts, input.timelineNote, input.timelineOfficer ?? input.assignedTo);
   }
 
+  if (input.status && input.status !== existing.status && existing.reporterNIK) {
+    notifyUserByNik(existing.reporterNIK, {
+      type: 'report_status',
+      title: 'Status Laporan Diperbarui',
+      message: `Laporan ${existing.reportNumber} sekarang: ${STATUS_TIMELINE_LABEL[input.status] ?? input.status}`,
+      link: 'my-reports',
+    });
+  }
+
+  return getReportById(id)!;
+}
+
+export function updateUserReport(id: string, reporterNik: string, input: UpdateUserReportInput): Report {
+  ensureDbReady();
+  const existing = getReportById(id);
+  if (!existing) {
+    throw new Error('Laporan tidak ditemukan');
+  }
+  if (existing.reporterNIK !== reporterNik) {
+    throw new Error('Anda tidak dapat mengedit laporan ini');
+  }
+  if (existing.status !== 'draft') {
+    throw new Error('Hanya laporan draft yang dapat diedit');
+  }
+
+  const ts = nowIso();
+  const updates: string[] = ['updated_at = @updatedAt'];
+  const params: Record<string, string> = { id, updatedAt: ts };
+
+  if (input.caseType !== undefined) {
+    updates.push('case_type = @caseType');
+    params.caseType = input.caseType;
+  }
+  if (input.incidentDate !== undefined) {
+    updates.push('incident_date = @incidentDate');
+    params.incidentDate = input.incidentDate;
+  }
+  if (input.location !== undefined) {
+    updates.push('location = @location');
+    params.location = input.location;
+  }
+  if (input.description !== undefined) {
+    updates.push('description = @description');
+    params.description = input.description;
+  }
+  if (input.reporterPhone !== undefined) {
+    updates.push('reporter_phone = @reporterPhone');
+    params.reporterPhone = input.reporterPhone;
+  }
+  if (input.submit) {
+    updates.push('status = @status');
+    params.status = 'submitted';
+  }
+
+  db.prepare(`UPDATE reports SET ${updates.join(', ')} WHERE id = @id`).run(params);
+
+  if (input.evidenceFiles?.length) {
+    const insertEvidence = db.prepare('INSERT INTO report_evidence (report_id, filename) VALUES (?, ?)');
+    for (const filename of input.evidenceFiles) {
+      insertEvidence.run(id, filename);
+    }
+  }
+
+  if (input.submit) {
+    addTimelineEvent(id, 'Laporan dikirim', ts);
+  } else {
+    addTimelineEvent(id, 'Draft diperbarui', ts);
+  }
+
   return getReportById(id)!;
 }
 
@@ -281,6 +370,7 @@ function hydrateLetter(row: Record<string, unknown>): LetterRequest {
     status: row.status as LetterStatus,
     createdAt: row.created_at as string,
     pickupDate: row.pickup_date as string | undefined,
+    rejectionReason: row.rejection_reason as string | undefined,
     attachmentFiles: loadLetterAttachments(id),
   };
 }
@@ -296,12 +386,26 @@ export function getLetterById(id: string): LetterRequest | null {
 export interface UpdateLetterInput {
   status?: LetterStatus;
   pickupDate?: string | null;
+  rejectionReason?: string | null;
 }
 
 export function updateLetter(id: string, input: UpdateLetterInput): LetterRequest | null {
   ensureDbReady();
-  if (!getLetterById(id)) {
+  const existing = getLetterById(id);
+  if (!existing) {
     return null;
+  }
+
+  if (
+    input.status &&
+    input.status !== existing.status &&
+    !canTransitionLetter(existing.status, input.status)
+  ) {
+    throw new Error(`Perubahan status surat dari "${existing.status}" ke "${input.status}" tidak diizinkan`);
+  }
+
+  if (input.status === 'rejected' && !input.rejectionReason?.trim()) {
+    throw new Error('Alasan penolakan wajib diisi');
   }
 
   const updates: string[] = [];
@@ -315,13 +419,28 @@ export function updateLetter(id: string, input: UpdateLetterInput): LetterReques
     updates.push('pickup_date = @pickupDate');
     params.pickupDate = input.pickupDate ?? null;
   }
+  if (input.rejectionReason !== undefined) {
+    updates.push('rejection_reason = @rejectionReason');
+    params.rejectionReason = input.rejectionReason ?? null;
+  }
 
   if (updates.length === 0) {
     return getLetterById(id);
   }
 
   db.prepare(`UPDATE letter_requests SET ${updates.join(', ')} WHERE id = @id`).run(params);
-  return getLetterById(id);
+
+  const updated = getLetterById(id)!;
+  if (input.status && input.status !== existing.status) {
+    notifyUserByNik(updated.requesterNIK, {
+      type: 'letter_status',
+      title: 'Status Surat Diperbarui',
+      message: `Pengajuan ${updated.requestNumber}: status ${input.status}`,
+      link: 'letter-service',
+    });
+  }
+
+  return updated;
 }
 
 function generateLetterNumber(letterTypeId: string): string {
@@ -434,8 +553,21 @@ export interface UpdateComplaintInput {
 
 export function updateComplaint(id: string, input: UpdateComplaintInput): Complaint | null {
   ensureDbReady();
-  if (!getComplaintById(id)) {
+  const existing = getComplaintById(id);
+  if (!existing) {
     return null;
+  }
+
+  if (
+    input.status &&
+    input.status !== existing.status &&
+    !canTransitionComplaint(existing.status, input.status)
+  ) {
+    throw new Error(`Perubahan status pengaduan dari "${existing.status}" ke "${input.status}" tidak diizinkan`);
+  }
+
+  if (input.status === 'resolved' && !input.response?.trim() && !existing.response) {
+    throw new Error('Tanggapan wajib diisi saat menyelesaikan pengaduan');
   }
 
   const updates: string[] = ['updated_at = @updatedAt'];
@@ -453,7 +585,23 @@ export function updateComplaint(id: string, input: UpdateComplaintInput): Compla
   }
 
   db.prepare(`UPDATE complaints SET ${updates.join(', ')} WHERE id = @id`).run(params);
-  return getComplaintById(id);
+
+  const updated = getComplaintById(id)!;
+  if (
+    (input.status && input.status !== existing.status) ||
+    (input.response && input.response !== existing.response)
+  ) {
+    if (updated.submitterNik) {
+      notifyUserByNik(updated.submitterNik, {
+        type: 'complaint_update',
+        title: 'Pengaduan Ditanggapi',
+        message: `Pengaduan ${updated.complaintNumber} telah diperbarui`,
+        link: 'complaints',
+      });
+    }
+  }
+
+  return updated;
 }
 
 function generateComplaintNumber(): string {
@@ -544,48 +692,4 @@ export function listOfficers(): Officer[] {
 
 export function getOfficerById(id: string): Officer | null {
   return listOfficers().find((o) => o.id === id) ?? null;
-}
-
-export function listUsers(): Array<{ id: string; name: string; email: string; role: string }> {
-  ensureDbReady();
-  const rows = db
-    .prepare('SELECT id, name, email, role FROM users ORDER BY name')
-    .all() as Array<{ id: string; name: string; email: string; role: string }>;
-
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    role: row.role === 'petugas' ? 'Petugas' : row.role === 'admin' ? 'Admin' : 'User',
-  }));
-}
-
-export function authenticateUser(email: string, password: string): DbUser | null {
-  ensureDbReady();
-  const row = db
-    .prepare('SELECT id, email, password, name, nik, phone, role FROM users WHERE email = ?')
-    .get(email) as
-    | {
-        id: string;
-        email: string;
-        password: string;
-        name: string;
-        nik: string | null;
-        phone: string | null;
-        role: DbUser['role'];
-      }
-    | undefined;
-
-  if (!row || row.password !== password) {
-    return null;
-  }
-
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    nik: row.nik ?? undefined,
-    phone: row.phone ?? undefined,
-    role: row.role,
-  };
 }

@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, type TooltipProps } from 'recharts';
 import { caseTypes } from '@/lib/data/mockData';
 import { useReports } from '@/hooks/useReports';
+import { spktApi } from '@/lib/spktApi';
 import { FileText, Users, CheckCircle2, TrendingUp, Clock } from 'lucide-react';
 
 const cardClass = "bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur";
@@ -27,50 +28,51 @@ const legendFormatter = (value: string) => (
 );
 
 export const AdminDashboard: React.FC = () => {
-  const { reports: mockReports, loading } = useReports();
+  const { reports: mockReports, loading: reportsLoading } = useReports();
+  const [stats, setStats] = useState<Awaited<ReturnType<typeof spktApi.getAdminStats>>['stats'] | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const totalReports = mockReports.length;
-  const completedReports = mockReports.filter(r => r.status === 'completed').length;
-  const processingReports = mockReports.filter(r => r.status === 'processing' || r.status === 'verified').length;
-  const completionRate = totalReports > 0 ? Math.round((completedReports / totalReports) * 100) : 0;
+  useEffect(() => {
+    spktApi
+      .getAdminStats()
+      .then(({ stats: data }) => setStats(data))
+      .catch(() => setStats(null))
+      .finally(() => setStatsLoading(false));
+  }, []);
 
-  const caseDistribution = caseTypes.map((type, idx) => ({
+  const loading = reportsLoading || statsLoading;
+
+  const totalReports = stats?.totalReports ?? mockReports.length;
+  const completedReports = stats?.completedReports ?? mockReports.filter(r => r.status === 'completed').length;
+  const processingReports = stats?.processingReports ?? mockReports.filter(r => r.status === 'processing' || r.status === 'verified').length;
+  const completionRate = stats?.completionRate ?? (totalReports > 0 ? Math.round((completedReports / totalReports) * 100) : 0);
+
+  const caseDistribution = (stats?.caseDistribution ?? caseTypes.map((type, idx) => ({
     id: `case-${idx}`,
     name: type,
-    value: mockReports.filter(r => r.caseType === type).length
-  })).filter(item => item.value > 0);
+    value: mockReports.filter(r => r.caseType === type).length,
+  }))).map((item, idx) => ({ id: `case-${idx}`, name: item.name, value: item.value })).filter(item => item.value > 0);
 
-  const monthlyData = [
-    { id: 'month-1', month: 'Jan', laporan: 45, selesai: 38 },
-    { id: 'month-2', month: 'Feb', laporan: 52, selesai: 45 },
-    { id: 'month-3', month: 'Mar', laporan: 48, selesai: 42 },
-    { id: 'month-4', month: 'Apr', laporan: 61, selesai: 55 },
-    { id: 'month-5', month: 'Mei', laporan: 55, selesai: 48 }
-  ];
+  const monthlyData = stats?.monthlyTrend.map((m, i) => ({ id: `month-${i}`, month: m.month, laporan: m.laporan, selesai: m.selesai })) ?? [];
 
-  const responseTimeData = [
-    { id: 'time-1', category: '< 1 hari', count: 15 },
-    { id: 'time-2', category: '1-3 hari', count: 28 },
-    { id: 'time-3', category: '3-7 hari', count: 12 },
-    { id: 'time-4', category: '> 7 hari', count: 5 }
-  ];
+  const responseTimeData = stats?.responseTimeBuckets.map((b, i) => ({ id: `time-${i}`, category: b.category, count: b.count })) ?? [];
 
   const COLORS = useMemo(() => ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#f472b6'], []);
 
-  const stats = [
+  const dashboardStats = [
     {
       title: 'Total Laporan',
       value: totalReports,
       icon: <FileText className="w-6 h-6 text-sky-300" />,
       iconBg: 'bg-sky-500/20',
-      change: '+12% dari bulan lalu',
+      change: `${stats?.reportsToday ?? 0} laporan hari ini`,
     },
     {
       title: 'Sedang Diproses',
       value: processingReports,
       icon: <Clock className="w-6 h-6 text-amber-300" />,
       iconBg: 'bg-amber-500/20',
-      change: '5 laporan baru hari ini',
+      change: 'Laporan aktif',
     },
     {
       title: 'Selesai',
@@ -81,10 +83,10 @@ export const AdminDashboard: React.FC = () => {
     },
     {
       title: 'Rata-rata Waktu',
-      value: '2.5 hari',
+      value: `${stats?.avgCompletionDays ?? 0} hari`,
       icon: <TrendingUp className="w-6 h-6 text-violet-300" />,
       iconBg: 'bg-violet-500/20',
-      change: '-15% lebih cepat',
+      change: 'Penyelesaian laporan',
     }
   ];
 
@@ -105,7 +107,7 @@ export const AdminDashboard: React.FC = () => {
       <>
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
+        {dashboardStats.map((stat, index) => (
           <Card key={`stat-${stat.title}-${index}`} className={cardClass}>
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
