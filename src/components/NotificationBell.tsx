@@ -80,7 +80,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
             </button>
           )}
         </div>
-        <div className="max-h-72 overflow-y-auto">
+        <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
           {notifications.length === 0 ? (
             <p className="p-4 text-sm text-blue-300 text-center">Tidak ada notifikasi</p>
           ) : (

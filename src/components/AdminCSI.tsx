@@ -142,9 +142,9 @@ export const AdminCSI: React.FC = () => {
               <p className="text-blue-300 text-center py-8">Belum ada data penilaian</p>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={summary?.byService ?? []} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <BarChart data={summary?.byService ?? []} margin={{ top: 5, right: 20, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="serviceLabel" tick={axisStyle} interval={0} angle={-15} textAnchor="end" height={60} />
+                  <XAxis dataKey="serviceLabel" tick={axisStyle} interval={0} textAnchor="middle" />
                   <YAxis domain={[0, 100]} tick={axisStyle} />
                   <Tooltip {...tooltipProps} formatter={(v: number) => [`${v}%`, 'CSI']} />
                   <Bar dataKey="csi" fill="#60a5fa" name="CSI" radius={[8, 8, 0, 0]} isAnimationActive={false} />
