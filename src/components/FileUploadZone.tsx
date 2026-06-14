@@ -11,6 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
+import { cn } from './ui/utils';
+import { spktDialogClass } from '@/lib/spktDialog';
 
 interface FileUploadZoneProps {
   files: File[];
@@ -170,7 +172,7 @@ export function FileUploadZone({
 
       <Dialog open={previewFile !== null} onOpenChange={(open) => !open && closePreview()}>
         <DialogContent
-          className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+          className={cn(spktDialogClass('3xl', { scroll: false }), 'flex flex-col overflow-hidden')}
         >
           <DialogHeader>
             <DialogTitle className="text-white truncate pr-6">
@@ -188,14 +190,14 @@ export function FileUploadZone({
               <img
                 src={previewUrl}
                 alt={previewFile.name}
-                className="max-h-[70vh] w-full object-contain mx-auto"
+                className="max-h-[55dvh] sm:max-h-[65dvh] w-full object-contain mx-auto"
               />
             )}
             {canPreviewInline && isPdfFile(previewFile) && (
               <iframe
                 src={previewUrl}
                 title={previewFile.name}
-                className="w-full h-[70vh] min-h-[400px] bg-white rounded"
+                className="w-full h-[55dvh] sm:h-[65dvh] min-h-[240px] bg-white rounded"
               />
             )}
             {previewFile && previewUrl && !isImageFile(previewFile) && !isPdfFile(previewFile) && (

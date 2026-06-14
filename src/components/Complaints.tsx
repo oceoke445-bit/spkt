@@ -36,9 +36,7 @@ import {
 import { complaintCategories } from '@/lib/constants';
 import { spktApi } from '@/lib/spktApi';
 import { useComplaints } from '@/hooks/useComplaints';
-
-const complaintDialogClass =
-  'w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur p-4 sm:p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400';
+import { spktDialogClass } from '@/lib/spktDialog';
 
 export const Complaints: React.FC = () => {
   const { user } = useAuth();
@@ -284,7 +282,7 @@ export const Complaints: React.FC = () => {
 
       {/* Create Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className={`${complaintDialogClass} sm:max-w-2xl`}>
+        <DialogContent className={spktDialogClass('2xl')}>
           <DialogHeader>
             <DialogTitle>Buat Pengaduan Baru</DialogTitle>
             <DialogDescription>
@@ -378,7 +376,7 @@ export const Complaints: React.FC = () => {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedComplaint} onOpenChange={() => setSelectedComplaint(null)}>
-        <DialogContent className={`${complaintDialogClass} sm:max-w-3xl`}>
+        <DialogContent className={spktDialogClass('3xl')}>
           {selectedComplaint && (
             <>
               <DialogHeader>

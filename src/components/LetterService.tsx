@@ -10,6 +10,7 @@ import { Badge } from './ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { letterTypes, getStatusBadgeColor, getStatusLabel } from '@/lib/data/mockData';
 import { spktApi } from '@/lib/spktApi';
+import { spktDialogClass } from '@/lib/spktDialog';
 import { useLetters } from '@/hooks/useLetters';
 import { CsiPromptButton } from './CsiPromptButton';
 import { useCsiEligibility } from '@/hooks/useCsiEligibility';
@@ -428,7 +429,7 @@ export const LetterService: React.FC = () => {
 
     {/* User letter detail */}
     <Dialog open={!!viewingLetter} onOpenChange={() => setViewingLetter(null)}>
-      <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-lg">
+      <DialogContent className={spktDialogClass('lg')}>
         {viewingLetter && (
           <>
             <DialogHeader>
@@ -461,7 +462,7 @@ export const LetterService: React.FC = () => {
 
     {/* Staff management dialog */}
     <Dialog open={!!managingLetter} onOpenChange={() => setManagingLetter(null)}>
-      <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur max-w-2xl">
+      <DialogContent className={spktDialogClass('2xl')}>
         {managingLetter && (
           <>
             <DialogHeader>

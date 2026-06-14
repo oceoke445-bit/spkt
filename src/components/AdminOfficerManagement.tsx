@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { spktApi } from '@/lib/spktApi';
+import { spktDialogClass } from '@/lib/spktDialog';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 
@@ -108,7 +109,7 @@ export const AdminOfficerManagement: React.FC = () => {
       )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50">
+        <DialogContent className={spktDialogClass('lg')}>
           <DialogHeader>
             <DialogTitle className="text-white">Tambah Petugas Baru</DialogTitle>
           </DialogHeader>

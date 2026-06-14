@@ -5,6 +5,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { surveyApi, SCORE_LABELS, type SurveyDimension } from '@/lib/surveyApi';
+import { spktDialogClass } from '@/lib/spktDialog';
 import { Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,7 +18,6 @@ interface SatisfactionFormProps {
   onSubmitted?: (csiScore: number) => void;
 }
 
-const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
 
 export const SatisfactionForm: React.FC<SatisfactionFormProps> = ({
   open,
@@ -101,9 +101,7 @@ export const SatisfactionForm: React.FC<SatisfactionFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={`${cardClass} w-[calc(100%-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full`}
-      >
+      <DialogContent className={spktDialogClass('2xl')}>
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Star className="w-5 h-5 text-amber-400" />

@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useReports } from '@/hooks/useReports';
 import { Search, FileText, Calendar, MapPin, User, Phone, CheckCircle2, Clock, AlertCircle, ExternalLink } from 'lucide-react';
 import { spktApi } from '@/lib/spktApi';
+import { spktDialogClass } from '@/lib/spktDialog';
 import { CsiPromptButton } from './CsiPromptButton';
 import { useCsiEligibility } from '@/hooks/useCsiEligibility';
 
@@ -185,7 +186,7 @@ export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
 
       {/* Detail Modal */}
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="w-[calc(100%-2rem)] sm:max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-900/95 to-blue-800/95 border-blue-500/50 backdrop-blur [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-blue-950/50 [&::-webkit-scrollbar-thumb]:bg-blue-500/60 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-blue-400">
+        <DialogContent className={spktDialogClass('3xl')}>
           {selectedReport && (
             <>
               <DialogHeader>
