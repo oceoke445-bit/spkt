@@ -238,7 +238,7 @@ export const LetterService: React.FC = () => {
                       type="date"
                       value={formData.pickupDate}
                       onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
-                      className="pl-10 bg-blue-900/50 border-blue-500/50 text-white"
+                      className="pl-10 pr-3 bg-blue-900/50 border-blue-500/50 text-white [color-scheme:dark]"
                       min={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                     />
                   </div>

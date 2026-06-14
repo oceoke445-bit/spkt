@@ -250,6 +250,7 @@ export const Settings: React.FC = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3 text-blue-400 hover:text-blue-200"
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -265,8 +266,16 @@ export const Settings: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                    className="pl-10 bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
+                    className="pl-10 pr-10 bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-blue-400 hover:text-blue-200"
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
                 <p className="text-xs text-blue-300">
                   Minimal 8 karakter, kombinasi huruf besar, kecil, dan angka
@@ -282,8 +291,16 @@ export const Settings: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    className="pl-10 bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
+                    className="pl-10 pr-10 bg-blue-900/50 border-blue-500/50 text-white placeholder:text-blue-400"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-blue-400 hover:text-blue-200"
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 

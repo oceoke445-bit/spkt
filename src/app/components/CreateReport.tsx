@@ -201,7 +201,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate }) => {
                     type="date"
                     value={formData.incidentDate}
                     onChange={(e) => handleInputChange('incidentDate', e.target.value)}
-                    className="pl-10 bg-blue-900/50 border-blue-500/50 text-white"
+                    className="pl-10 pr-3 bg-blue-900/50 border-blue-500/50 text-white [color-scheme:dark]"
                     max={new Date().toISOString().split('T')[0]}
                     required
                   />
