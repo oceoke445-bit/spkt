@@ -4,16 +4,59 @@ import path from 'path';
 import { hashPassword, isPasswordHashed } from '@/lib/password';
 
 const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
+const dbPath = process.env.DATABASE_PATH || path.join(dataDir, 'spkt.db');
 
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+/** Skip SQLite during `next build` — parallel workers would lock the same file */
+function isDatabaseDisabled(): boolean {
+  return process.env.NEXT_PHASE === 'phase-production-build';
 }
 
-const dbPath = process.env.DATABASE_PATH || path.join(dataDir, 'spkt.db');
-const db = new DatabaseSync(dbPath);
+let dbInstance: DatabaseSync | null = null;
 
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA busy_timeout = 5000');
+function getConnection(): DatabaseSync {
+  if (isDatabaseDisabled()) {
+    throw new Error('Database is not available during Next.js build');
+  }
+
+  if (!dbInstance) {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    dbInstance = new DatabaseSync(dbPath);
+    dbInstance.exec('PRAGMA journal_mode = WAL');
+    dbInstance.exec('PRAGMA busy_timeout = 5000');
+  }
+
+  return dbInstance;
+}
+
+function createBuildStub(prop: string | symbol): unknown {
+  if (prop === 'prepare') {
+    return () => ({
+      run: () => ({ lastInsertRowid: 0, changes: 0 }),
+      get: () => undefined,
+      all: () => [],
+    });
+  }
+  if (prop === 'exec') {
+    return () => undefined;
+  }
+  return undefined;
+}
+
+const db = new Proxy({} as DatabaseSync, {
+  get(_target, prop) {
+    if (isDatabaseDisabled()) {
+      return createBuildStub(prop);
+    }
+    const instance = getConnection();
+    const value = instance[prop as keyof DatabaseSync];
+    if (typeof value === 'function') {
+      return (value as (...args: unknown[]) => unknown).bind(instance);
+    }
+    return value;
+  },
+});
 
 const DIMENSIONS = [
   { code: 'ease', name: 'Kemudahan Prosedur', weight: 1 },
@@ -28,7 +71,8 @@ export const MAX_SCORE = 4;
 let initialized = false;
 
 function initDatabase() {
-  db.exec(`
+  const conn = getConnection();
+  conn.exec(`
     CREATE TABLE IF NOT EXISTS survey_dimensions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT NOT NULL UNIQUE,
@@ -615,10 +659,13 @@ function seedAppData() {
 }
 
 export function ensureDbReady() {
+  if (isDatabaseDisabled()) {
+    return;
+  }
   if (!initialized) {
     initDatabase();
     initialized = true;
   }
 }
 
-export { db };
+export { db, isDatabaseDisabled };
