@@ -310,6 +310,11 @@ export const spktApi = {
       body: JSON.stringify(payload),
     }),
 
+  deleteUserReport: (id: string) =>
+    request<{ message: string }>(`/reports/${id}`, {
+      method: 'DELETE',
+    }),
+
   getLetters: (params?: { nik?: string; page?: number; limit?: number }) => {
     const search = new URLSearchParams();
     if (params?.nik) search.set('nik', params.nik);

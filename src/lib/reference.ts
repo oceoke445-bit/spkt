@@ -1,5 +1,8 @@
 import { db, ensureDbReady } from '@/lib/db';
 
+const REFERENCE_PREFIXES = ['LP', 'ADU', 'SKCK', 'SKH', 'IZIN'] as const;
+let countersSynced = false;
+
 function getReferenceTable(prefix: string): { table: string; column: string } | null {
   if (prefix === 'LP') return { table: 'reports', column: 'report_number' };
   if (prefix === 'ADU') return { table: 'complaints', column: 'complaint_number' };
@@ -19,7 +22,7 @@ function getMaxExistingSequence(prefix: string, year: number): number {
        FROM ${referenceTable.table}
        WHERE ${referenceTable.column} LIKE ?`,
     )
-    .all(`${prefix}/%/${year}`) as Array<{ referenceNumber: string }>;
+    .all(`${prefix}/%/V/${year}`) as Array<{ referenceNumber: string }>;
 
   return rows.reduce((max, row) => {
     const [, sequence] = row.referenceNumber.split('/');
@@ -28,8 +31,32 @@ function getMaxExistingSequence(prefix: string, year: number): number {
   }, 0);
 }
 
+function ensureCountersSynced(): void {
+  if (countersSynced) return;
+  ensureDbReady();
+  const year = new Date().getFullYear();
+
+  for (const prefix of REFERENCE_PREFIXES) {
+    db.prepare(
+      'INSERT OR IGNORE INTO reference_counters (prefix, year, last_value) VALUES (?, ?, 0)',
+    ).run(prefix, year);
+
+    const maxExisting = getMaxExistingSequence(prefix, year);
+    if (maxExisting > 0) {
+      db.prepare(
+        `UPDATE reference_counters
+         SET last_value = MAX(last_value, ?)
+         WHERE prefix = ? AND year = ?`,
+      ).run(maxExisting, prefix, year);
+    }
+  }
+
+  countersSynced = true;
+}
+
 export function allocateReferenceNumber(prefix: string, pad = 3): string {
   ensureDbReady();
+  ensureCountersSynced();
   const year = new Date().getFullYear();
 
   db.exec('BEGIN IMMEDIATE');

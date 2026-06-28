@@ -2,27 +2,34 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { getStatusBadgeColor, getStatusLabel, Report } from '@/lib/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReports } from '@/hooks/useReports';
-import { Search, FileText, Calendar, MapPin, User, Phone, CheckCircle2, Clock, AlertCircle, ExternalLink } from 'lucide-react';
+import { Search, FileText, Calendar, MapPin, User, Phone, CheckCircle2, Clock, AlertCircle, ExternalLink, Trash2 } from 'lucide-react';
 import { spktApi } from '@/lib/spktApi';
 import { spktDialogClass } from '@/lib/spktDialog';
 import { CsiPromptButton } from './CsiPromptButton';
 import { useCsiEligibility } from '@/hooks/useCsiEligibility';
 import { SpktPagination } from './SpktPagination';
+import { toast } from 'sonner';
+import type { ReportStatus } from '@/lib/types/spkt';
 
 interface MyReportsProps {
   onContinueDraft?: (reportId: string) => void;
 }
 
+function canUserDeleteReport(status: ReportStatus): boolean {
+  return status === 'draft' || status === 'submitted';
+}
+
 export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
   const { user } = useAuth();
-  const { reports: userReports, loading, page, setPage, total, totalPages } = useReports({ nik: user?.nik });
+  const { reports: userReports, loading, page, setPage, total, totalPages, refresh } = useReports({ nik: user?.nik });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const { eligible: csiEligible, checking: csiChecking, refresh: refreshCsi } = useCsiEligibility(
@@ -46,6 +53,24 @@ export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
       return <CheckCircle2 className="w-5 h-5 text-green-600" />;
     }
     return <Clock className="w-5 h-5 text-blue-600" />;
+  };
+
+  const handleDeleteReport = async () => {
+    if (!reportToDelete) return;
+    setDeleting(true);
+    try {
+      await spktApi.deleteUserReport(reportToDelete.id);
+      toast.success('Laporan berhasil dihapus');
+      if (selectedReport?.id === reportToDelete.id) {
+        setSelectedReport(null);
+      }
+      setReportToDelete(null);
+      await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menghapus laporan');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -163,6 +188,20 @@ export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
                           }}
                         >
                           Lanjutkan Draft
+                        </Button>
+                      )}
+                      {canUserDeleteReport(report.status) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-400/50 text-red-200 hover:bg-red-900/40"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReportToDelete(report);
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Hapus
                         </Button>
                       )}
                       <Button
@@ -350,9 +389,55 @@ export const MyReports: React.FC<MyReportsProps> = ({ onContinueDraft }) => {
                     onSubmitted={refreshCsi}
                   />
                 )}
+
+                {canUserDeleteReport(selectedReport.status) && (
+                  <div className="flex justify-end pt-2 border-t border-blue-500/30">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-red-400/50 text-red-200 hover:bg-red-900/40"
+                      onClick={() => setReportToDelete(selectedReport)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Hapus Laporan
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!reportToDelete} onOpenChange={(open) => !open && setReportToDelete(null)}>
+        <DialogContent className={spktDialogClass('md')}>
+          <DialogHeader>
+            <DialogTitle className="text-white">Hapus Laporan</DialogTitle>
+            <DialogDescription className="text-blue-200">
+              Yakin ingin menghapus laporan{' '}
+              <span className="font-medium text-white">{reportToDelete?.reportNumber}</span>?
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-blue-500/50 text-blue-200 hover:bg-blue-800/60"
+              onClick={() => setReportToDelete(null)}
+              disabled={deleting}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              disabled={deleting}
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0"
+              onClick={handleDeleteReport}
+            >
+              {deleting ? 'Menghapus...' : 'Hapus'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       </>

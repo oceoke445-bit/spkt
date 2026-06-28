@@ -1,4 +1,4 @@
-import { getReportById, updateReport, updateUserReport, getOfficerById } from '@/lib/services/spkt';
+import { getReportById, updateReport, updateUserReport, deleteUserReport, getOfficerById } from '@/lib/services/spkt';
 import { requireAuth, requireRole } from '@/lib/auth-server';
 import { handleApi, jsonOk, ApiError } from '@/lib/api-response';
 
@@ -64,4 +64,19 @@ export const PATCH = handleApi(async (request, context: { params: Promise<{ id: 
   });
 
   return jsonOk({ report });
+});
+
+export const DELETE = handleApi(async (request, context: { params: Promise<{ id: string }> }) => {
+  const sessionUser = await requireAuth(request);
+  const { id } = await context.params;
+
+  if (sessionUser.role !== 'user') {
+    throw new ApiError(403, 'Hanya pengguna dapat menghapus laporan sendiri');
+  }
+  if (!sessionUser.nik) {
+    throw new ApiError(400, 'NIK user tidak tersedia');
+  }
+
+  deleteUserReport(id, sessionUser.nik);
+  return jsonOk({ message: 'Laporan berhasil dihapus' });
 });

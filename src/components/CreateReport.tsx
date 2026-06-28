@@ -40,6 +40,7 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
   };
 
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [existingEvidenceFiles, setExistingEvidenceFiles] = useState<string[]>([]);
 
@@ -111,6 +112,8 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
   };
 
   const handleSaveDraft = async () => {
+    if (savingDraft) return;
+    setSavingDraft(true);
     try {
       let evidenceFiles: string[] = [...existingEvidenceFiles];
       if (formData.files.length > 0) {
@@ -149,6 +152,8 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
       toast.error('Gagal menyimpan draft', {
         description: err instanceof Error ? err.message : 'Terjadi kesalahan',
       });
+    } finally {
+      setSavingDraft(false);
     }
   };
 
@@ -348,9 +353,10 @@ export const CreateReport: React.FC<CreateReportProps> = ({ onNavigate, draftId,
             type="button"
             size="lg"
             onClick={handleSaveDraft}
+            disabled={savingDraft || submitting}
             className="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white shadow-md"
           >
-            Simpan Draft
+            {savingDraft ? 'Menyimpan...' : 'Simpan Draft'}
           </Button>
           <Button
             type="button"

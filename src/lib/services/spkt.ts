@@ -173,14 +173,18 @@ export interface CreateReportInput {
   evidenceFiles?: string[];
 }
 
+function isDuplicateReportNumberError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('UNIQUE constraint failed: reports.report_number');
+}
+
 export function createReport(input: CreateReportInput): Report {
   ensureDbReady();
   const id = `R${Date.now()}`;
-  const reportNumber = generateReportNumber();
   const status = input.status ?? 'submitted';
   const ts = nowIso();
 
-  db.prepare(
+  const insertReport = db.prepare(
     `INSERT INTO reports (
       id, report_number, reporter_user_id, reporter_name, reporter_nik, reporter_phone,
       case_type, incident_date, location, description, status, priority, created_at, updated_at
@@ -188,22 +192,35 @@ export function createReport(input: CreateReportInput): Report {
       @id, @reportNumber, @reporterUserId, @reporterName, @reporterNIK, @reporterPhone,
       @caseType, @incidentDate, @location, @description, @status, @priority, @createdAt, @updatedAt
     )`,
-  ).run({
-    id,
-    reportNumber,
-    reporterUserId: input.reporterUserId ?? null,
-    reporterName: input.reporterName,
-    reporterNIK: input.reporterNIK,
-    reporterPhone: input.reporterPhone,
-    caseType: input.caseType,
-    incidentDate: input.incidentDate,
-    location: input.location,
-    description: input.description,
-    status,
-    priority: input.priority ?? 'medium',
-    createdAt: ts,
-    updatedAt: ts,
-  });
+  );
+
+  let reportNumber = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    reportNumber = generateReportNumber();
+    try {
+      insertReport.run({
+        id,
+        reportNumber,
+        reporterUserId: input.reporterUserId ?? null,
+        reporterName: input.reporterName,
+        reporterNIK: input.reporterNIK,
+        reporterPhone: input.reporterPhone,
+        caseType: input.caseType,
+        incidentDate: input.incidentDate,
+        location: input.location,
+        description: input.description,
+        status,
+        priority: input.priority ?? 'medium',
+        createdAt: ts,
+        updatedAt: ts,
+      });
+      break;
+    } catch (error) {
+      if (!isDuplicateReportNumberError(error) || attempt === 4) {
+        throw error;
+      }
+    }
+  }
 
   const timelineStatus = status === 'draft' ? 'Draft disimpan' : 'Laporan dikirim';
   addTimelineEvent(id, timelineStatus, ts);
@@ -417,6 +434,24 @@ export function updateUserReport(id: string, reporterNik: string, input: UpdateU
   }
 
   return getReportById(id)!;
+}
+
+export function deleteUserReport(id: string, reporterNik: string): void {
+  ensureDbReady();
+  const existing = getReportById(id);
+  if (!existing) {
+    throw new Error('Laporan tidak ditemukan');
+  }
+  if (existing.reporterNIK !== reporterNik) {
+    throw new Error('Anda tidak dapat menghapus laporan ini');
+  }
+  if (existing.status !== 'draft' && existing.status !== 'submitted') {
+    throw new Error('Laporan yang sudah diproses tidak dapat dihapus');
+  }
+
+  db.prepare('DELETE FROM report_timeline WHERE report_id = ?').run(id);
+  db.prepare('DELETE FROM report_evidence WHERE report_id = ?').run(id);
+  db.prepare('DELETE FROM reports WHERE id = ?').run(id);
 }
 
 export function listLetters(
