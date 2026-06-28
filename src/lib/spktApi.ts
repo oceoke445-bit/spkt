@@ -180,17 +180,6 @@ export interface AuditLogItem {
   createdAt: string;
 }
 
-export interface TrackResult {
-  found: boolean;
-  serviceType: 'report' | 'letter' | 'complaint';
-  referenceNumber: string;
-  status: string;
-  statusLabel: string;
-  createdAt: string;
-  timeline: Array<{ status: string; timestamp: string; note?: string; officer?: string }>;
-  summary?: string;
-}
-
 export const spktApi = {
   getSession: () => request<{ user: LoginResponse['user'] | null }>('/auth/session'),
 
@@ -278,11 +267,6 @@ export const spktApi = {
       method: 'POST',
       body: JSON.stringify({ action: 'disable', code }),
     }),
-
-  trackService: (type: 'report' | 'letter' | 'complaint', number: string, nik: string) =>
-    request<{ track: TrackResult }>(
-      `/track?type=${encodeURIComponent(type)}&number=${encodeURIComponent(number)}&nik=${encodeURIComponent(nik)}`,
-    ),
 
   getAuditLogs: (page = 1, limit = 20) =>
     request<{ logs: AuditLogItem[]; pagination: PaginatedMeta }>(

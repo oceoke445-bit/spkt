@@ -8,11 +8,10 @@ import { Alert, AlertDescription } from './ui/alert';
 import { Mail, Lock, AlertCircle, Shield } from 'lucide-react';
 import { RegisterPage } from './RegisterPage';
 import { ForgotPasswordPage } from './ForgotPasswordPage';
-import { TrackService } from './TrackService';
 import { SpktLogo } from './SpktLogo';
 import { spktApi } from '@/lib/spktApi';
 
-type AuthView = 'login' | 'register' | 'forgot' | 'track' | '2fa';
+type AuthView = 'login' | 'register' | 'forgot' | '2fa';
 
 export const LoginPage: React.FC = () => {
   const [view, setView] = useState<AuthView>('login');
@@ -76,9 +75,6 @@ export const LoginPage: React.FC = () => {
   }
   if (view === 'forgot') {
     return <ForgotPasswordPage onBack={() => setView('login')} />;
-  }
-  if (view === 'track') {
-    return <TrackService onBack={() => setView('login')} />;
   }
 
   if (view === '2fa') {
@@ -198,15 +194,10 @@ export const LoginPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <div className="text-center text-sm text-blue-300 mt-6 space-y-2">
+        <div className="text-center text-sm text-blue-300 mt-6">
           <p>
             Belum punya akun?{' '}
             <button type="button" onClick={() => setView('register')} className="text-blue-400 hover:text-blue-300 hover:underline">Daftar sekarang</button>
-          </p>
-          <p>
-            <button type="button" onClick={() => setView('track')} className="text-cyan-400 hover:text-cyan-300 hover:underline">
-              Lacak layanan tanpa login
-            </button>
           </p>
         </div>
       </div>
