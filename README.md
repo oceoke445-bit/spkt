@@ -51,7 +51,10 @@ Salin `.env.example` ke `.env.local` jika perlu override.
 ## Dokumentasi
 
 - [Penjelasan flow & proses aplikasi](docs/penjelasan.md)
-- [Materi presentasi PPT (per slide)](docs/presentasi-ppt.md)
+- [Presentasi PPT — indeks](docs/presentasi-ppt.md)
+  - [Bisnis & fitur](docs/presentasi-ppt-bisnis.md)
+  - [Arsitektur teknis (DB, BE, FE)](docs/presentasi-ppt-teknis.md)
+  - [Penutup & desain](docs/presentasi-ppt-penutup.md)
 - [Flow & diagram ringkas](docs/FLOW.md)
 - [API contract](docs/API.md)
 

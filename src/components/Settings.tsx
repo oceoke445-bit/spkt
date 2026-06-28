@@ -3,24 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Switch } from './ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Alert, AlertDescription } from './ui/alert';
 import { Separator } from './ui/separator';
-import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   User,
-  Bell,
   Lock,
   Shield,
-  Smartphone,
-  Mail,
-  Globe,
   Save,
-  CheckCircle2,
   AlertCircle,
   Key,
   Eye,
@@ -29,28 +21,19 @@ import {
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { spktApi, type UserPreferences } from '@/lib/spktApi';
+import { spktApi } from '@/lib/spktApi';
 
 const cardClass = 'bg-gradient-to-br from-blue-900/80 to-blue-800/80 border-blue-500/50 backdrop-blur';
-const itemClass = 'flex items-center justify-between p-4 border border-blue-500/30 rounded-lg bg-blue-950/30';
-const tabsListClass = 'grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-1 bg-blue-950/60 border border-blue-500/40 p-1';
+const tabsListClass = 'grid w-full grid-cols-2 h-auto gap-1 bg-blue-950/60 border border-blue-500/40 p-1';
 const tabTriggerClass =
   'text-blue-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-400/50 [&_svg]:text-blue-300 data-[state=active]:[&_svg]:text-sky-200';
+
+/** Sembunyikan UI setup 2FA di Pengaturan > Keamanan (backend tetap aktif). */
+const SHOW_2FA_SETTINGS = false;
 
 export const Settings: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [notifications, setNotifications] = useState<UserPreferences>({
-    email: true,
-    push: true,
-    sms: false,
-    reportUpdate: true,
-    letterReady: true,
-    systemNews: false,
-    publicProfile: false,
-    activityHistory: true,
-  });
-
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -73,10 +56,6 @@ export const Settings: React.FC = () => {
         avatarUrl: profile.avatarUrl || '',
       });
     }).catch(() => {});
-
-    spktApi.getPreferences().then(({ preferences }) => {
-      setNotifications(preferences);
-    }).catch(() => {});
   }, []);
 
   const [deletePassword, setDeletePassword] = useState('');
@@ -86,6 +65,7 @@ export const Settings: React.FC = () => {
   const [totpCode, setTotpCode] = useState('');
 
   useEffect(() => {
+    if (!SHOW_2FA_SETTINGS) return;
     spktApi.getTotpStatus().then((s) => setTotpEnabled(s.enabled)).catch(() => {});
   }, []);
 
@@ -160,17 +140,6 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const handleNotificationChange = async (key: keyof UserPreferences, value: boolean) => {
-    const updated = { ...notifications, [key]: value };
-    setNotifications(updated);
-    try {
-      await spktApi.updatePreferences({ [key]: value });
-      toast.success('Pengaturan disimpan');
-    } catch {
-      toast.error('Gagal menyimpan pengaturan');
-    }
-  };
-
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -236,7 +205,7 @@ export const Settings: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-white">Pengaturan</h1>
-        <p className="text-blue-200 mt-1">Kelola akun dan preferensi Anda</p>
+        <p className="text-blue-200 mt-1">Kelola profil dan keamanan akun Anda</p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
@@ -248,14 +217,6 @@ export const Settings: React.FC = () => {
           <TabsTrigger value="security" className={`text-xs sm:text-sm py-2 gap-1.5 ${tabTriggerClass}`}>
             <Shield className="w-4 h-4 shrink-0" />
             Keamanan
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className={`text-xs sm:text-sm py-2 gap-1.5 ${tabTriggerClass}`}>
-            <Bell className="w-4 h-4 shrink-0" />
-            Notifikasi
-          </TabsTrigger>
-          <TabsTrigger value="preferences" className={`text-xs sm:text-sm py-2 gap-1.5 ${tabTriggerClass}`}>
-            <Globe className="w-4 h-4 shrink-0" />
-            Preferensi
           </TabsTrigger>
         </TabsList>
 
@@ -468,6 +429,7 @@ export const Settings: React.FC = () => {
             </CardContent>
           </Card>
 
+          {SHOW_2FA_SETTINGS && (
           <Card className={cardClass}>
             <CardHeader>
               <CardTitle className="text-white">Autentikasi Dua Faktor (2FA)</CardTitle>
@@ -500,184 +462,29 @@ export const Settings: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-6">
+          )}
           <Card className={cardClass}>
             <CardHeader>
-              <CardTitle className="text-white">Saluran Notifikasi</CardTitle>
-              <CardDescription className="text-blue-200">Pilih bagaimana Anda ingin menerima notifikasi</CardDescription>
+              <CardTitle className="text-white">Data & Akun</CardTitle>
+              <CardDescription className="text-blue-200">Ekspor atau hapus data akun Anda</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className={itemClass}>
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-blue-200" />
-                  <div>
-                    <h4 className="font-medium text-white">Email</h4>
-                    <p className="text-sm text-blue-200">Notifikasi via email</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={notifications.email}
-                  onCheckedChange={(checked) => handleNotificationChange('email', checked)}
-                />
-              </div>
-
-              <div className={itemClass}>
-                <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-blue-200" />
-                  <div>
-                    <h4 className="font-medium text-white">Push Notification</h4>
-                    <p className="text-sm text-blue-200">Notifikasi di aplikasi</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={notifications.push}
-                  onCheckedChange={(checked) => handleNotificationChange('push', checked)}
-                />
-              </div>
-
-              <div className={itemClass}>
-                <div className="flex items-center gap-3">
-                  <Smartphone className="w-5 h-5 text-blue-200" />
-                  <div>
-                    <h4 className="font-medium text-white">SMS</h4>
-                    <p className="text-sm text-blue-200">Notifikasi via SMS</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={notifications.sms}
-                  onCheckedChange={(checked) => handleNotificationChange('sms', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={cardClass}>
-            <CardHeader>
-              <CardTitle className="text-white">Jenis Notifikasi</CardTitle>
-              <CardDescription className="text-blue-200">Pilih informasi yang ingin Anda terima</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className={itemClass}>
-                <div>
-                  <h4 className="font-medium text-white">Update Laporan</h4>
-                  <p className="text-sm text-blue-200">Notifikasi saat status laporan berubah</p>
-                </div>
-                <Switch
-                  checked={notifications.reportUpdate}
-                  onCheckedChange={(checked) => handleNotificationChange('reportUpdate', checked)}
-                />
-              </div>
-
-              <div className={itemClass}>
-                <div>
-                  <h4 className="font-medium text-white">Surat Siap Diambil</h4>
-                  <p className="text-sm text-blue-200">Notifikasi saat surat sudah siap</p>
-                </div>
-                <Switch
-                  checked={notifications.letterReady}
-                  onCheckedChange={(checked) => handleNotificationChange('letterReady', checked)}
-                />
-              </div>
-
-              <div className={itemClass}>
-                <div>
-                  <h4 className="font-medium text-white">Berita & Update Sistem</h4>
-                  <p className="text-sm text-blue-200">Informasi terbaru dari SPKT</p>
-                </div>
-                <Switch
-                  checked={notifications.systemNews}
-                  onCheckedChange={(checked) => handleNotificationChange('systemNews', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Preferences Tab */}
-        <TabsContent value="preferences" className="space-y-6">
-          <Card className={cardClass}>
-            <CardHeader>
-              <CardTitle className="text-white">Bahasa</CardTitle>
-              <CardDescription className="text-blue-200">Preferensi bahasa aplikasi</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-blue-200">Bahasa</Label>
-                <Button
-                  type="button"
-                  className="w-full justify-start bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white shadow-md border border-sky-400/40"
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-2 text-sky-100" />
-                  Bahasa Indonesia
-                </Button>
-                <p className="text-xs text-blue-300">Aplikasi saat ini menggunakan Bahasa Indonesia.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={cardClass}>
-            <CardHeader>
-              <CardTitle className="text-white">Privasi</CardTitle>
-              <CardDescription className="text-blue-200">Kontrol data dan privasi Anda</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className={itemClass}>
-                <div>
-                  <h4 className="font-medium text-white">Tampilkan Profil Publik</h4>
-                  <p className="text-sm text-blue-200">Izinkan orang lain melihat profil Anda</p>
-                </div>
-                <Switch
-                  checked={notifications.publicProfile}
-                  onCheckedChange={(checked) => handleNotificationChange('publicProfile', checked)}
-                />
-              </div>
-
-              <div className={itemClass}>
-                <div>
-                  <h4 className="font-medium text-white">Riwayat Aktivitas</h4>
-                  <p className="text-sm text-blue-200">Simpan riwayat aktivitas Anda</p>
-                </div>
-                <Switch
-                  checked={notifications.activityHistory}
-                  onCheckedChange={(checked) => handleNotificationChange('activityHistory', checked)}
-                />
-              </div>
-
-              <Separator className="bg-blue-500/30" />
-
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  onClick={handleExportData}
-                  className="w-full justify-start bg-sky-500 hover:bg-sky-600 text-white shadow-md border border-sky-400/50 [&_svg]:text-sky-100"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Data Saya
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="w-full justify-start bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md [&_svg]:text-red-100"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Hapus Akun
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-amber-900/40 border-amber-500/50">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5" />
-                <div className="text-sm text-amber-100">
-                  <p className="font-medium mb-1">Perhatian</p>
-                  <p>Menghapus akun akan menghapus semua data Anda secara permanen dan tidak dapat dikembalikan.</p>
-                </div>
-              </div>
+            <CardContent className="space-y-3">
+              <Button
+                type="button"
+                onClick={handleExportData}
+                className="w-full justify-start bg-sky-500 hover:bg-sky-600 text-white shadow-md border border-sky-400/50 [&_svg]:text-sky-100"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Data Saya
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setShowDeleteDialog(true)}
+                className="w-full justify-start bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md [&_svg]:text-red-100"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Hapus Akun
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
