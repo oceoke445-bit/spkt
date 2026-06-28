@@ -17,7 +17,6 @@ import {
   Key,
   Eye,
   EyeOff,
-  Download,
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -147,15 +146,6 @@ export const Settings: React.FC = () => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  };
-
-  const handleExportData = async () => {
-    try {
-      await spktApi.exportMyData();
-      toast.success('Data berhasil diunduh');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal mengunduh data');
-    }
   };
 
   const handleDeleteAccount = async () => {
@@ -465,18 +455,10 @@ export const Settings: React.FC = () => {
           )}
           <Card className={cardClass}>
             <CardHeader>
-              <CardTitle className="text-white">Data & Akun</CardTitle>
-              <CardDescription className="text-blue-200">Ekspor atau hapus data akun Anda</CardDescription>
+              <CardTitle className="text-white">Hapus Akun</CardTitle>
+              <CardDescription className="text-blue-200">Hapus akun dan data Anda secara permanen</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                type="button"
-                onClick={handleExportData}
-                className="w-full justify-start bg-sky-500 hover:bg-sky-600 text-white shadow-md border border-sky-400/50 [&_svg]:text-sky-100"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Data Saya
-              </Button>
+            <CardContent>
               <Button
                 type="button"
                 onClick={() => setShowDeleteDialog(true)}
