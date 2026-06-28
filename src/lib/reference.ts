@@ -1,5 +1,33 @@
 import { db, ensureDbReady } from '@/lib/db';
 
+function getReferenceTable(prefix: string): { table: string; column: string } | null {
+  if (prefix === 'LP') return { table: 'reports', column: 'report_number' };
+  if (prefix === 'ADU') return { table: 'complaints', column: 'complaint_number' };
+  if (['SKCK', 'SKH', 'IZIN'].includes(prefix)) {
+    return { table: 'letter_requests', column: 'request_number' };
+  }
+  return null;
+}
+
+function getMaxExistingSequence(prefix: string, year: number): number {
+  const referenceTable = getReferenceTable(prefix);
+  if (!referenceTable) return 0;
+
+  const rows = db
+    .prepare(
+      `SELECT ${referenceTable.column} AS referenceNumber
+       FROM ${referenceTable.table}
+       WHERE ${referenceTable.column} LIKE ?`,
+    )
+    .all(`${prefix}/%/${year}`) as Array<{ referenceNumber: string }>;
+
+  return rows.reduce((max, row) => {
+    const [, sequence] = row.referenceNumber.split('/');
+    const value = Number(sequence);
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+}
+
 export function allocateReferenceNumber(prefix: string, pad = 3): string {
   ensureDbReady();
   const year = new Date().getFullYear();
@@ -9,6 +37,13 @@ export function allocateReferenceNumber(prefix: string, pad = 3): string {
     db.prepare(
       'INSERT OR IGNORE INTO reference_counters (prefix, year, last_value) VALUES (?, ?, 0)',
     ).run(prefix, year);
+
+    const maxExisting = getMaxExistingSequence(prefix, year);
+    db.prepare(
+      `UPDATE reference_counters
+       SET last_value = MAX(last_value, ?)
+       WHERE prefix = ? AND year = ?`,
+    ).run(maxExisting, prefix, year);
 
     db.prepare(
       'UPDATE reference_counters SET last_value = last_value + 1 WHERE prefix = ? AND year = ?',
